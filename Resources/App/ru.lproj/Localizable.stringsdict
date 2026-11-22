@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>files.matching-independent-windows-listen-to</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>few</key>
+			<string>Совпадение в %lld независимых окнах. Прослушайте запись.</string>
+			<key>many</key>
+			<string>Совпадение в %lld независимых окнах. Прослушайте запись.</string>
+			<key>one</key>
+			<string>Совпадение в %lld независимом окне. Прослушайте запись.</string>
+			<key>other</key>
+			<string>Совпадение в %lld независимых окнах. Прослушайте запись.</string>
+		</dict>
+	</dict>
+	<key>files.updated-segments-in-this-episode</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>few</key>
+			<string>Исправлены %lld реплики в этом эпизоде.</string>
+			<key>many</key>
+			<string>Исправлено %lld реплик в этом эпизоде.</string>
+			<key>one</key>
+			<string>Исправлена %lld реплика в этом эпизоде.</string>
+			<key>other</key>
+			<string>Исправлено %lld реплик в этом эпизоде.</string>
+		</dict>
+	</dict>
+	<key>history.records-in-history-change-the</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>few</key>
+			<string>В истории %lld записи. Переключите фильтр, чтобы увидеть их.</string>
+			<key>many</key>
+			<string>В истории %lld записей. Переключите фильтр, чтобы увидеть их.</string>
+			<key>one</key>
+			<string>В истории %lld запись. Переключите фильтр, чтобы увидеть её.</string>
+			<key>other</key>
+			<string>В истории %lld записей. Переключите фильтр, чтобы увидеть их.</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

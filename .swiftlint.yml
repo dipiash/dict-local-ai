@@ -1,0 +1,21 @@
+only_rules:
+  - class_delegate_protocol
+  - discarded_notification_center_observer
+  - duplicate_enum_cases
+  - duplicate_imports
+  - force_cast
+  - force_try
+  - overridden_super_call
+  - prohibited_super_call
+  - unused_closure_parameter
+  - unused_control_flow_label
+  - unused_enumerated
+  - unused_optional_binding
+  - unused_setter_value
+  - weak_delegate
+included:
+  - Sources
+  - Tests
+excluded:
+  - .build
+  - .tools

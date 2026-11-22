@@ -1,0 +1,72 @@
+# SwiftPM / development
+.build/
+.swiftpm/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+.tools/
+.idea/
+.vscode/
+# Build output
+/dist/
+*.app/
+*.dmg
+*.xcarchive/
+*.dSYM/
+*.dSYM.zip
+*.zip
+*.tar.gz
+# OS and Python
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv*/
+.pytest_cache/
+.ruff_cache/
+# Secrets and certificates
+.env
+.env.*
+!.env.example
+*.p12
+*.pfx
+*.p8
+*.key
+*.pem
+*.cer
+*.mobileprovision
+*.provisionprofile
+.dev-certs/
+# User data and diagnostics
+.private/
+local-data/
+logs/
+*.log
+*.sqlite*
+*.db
+*.db-wal
+*.db-shm
+*.m4a
+*.wav
+*.mp3
+*.flac
+*.aac
+*.aiff
+*.caf
+*.sample.txt
+*-diarization-audit.json
+session-*.json
+# Local evaluation data (only the public template is tracked)
+benchmarks/*
+!benchmarks/README.md
+!benchmarks/references.json
+# Model weights
+*.mlmodelc/
+*.mlpackage/
+*.mlmodel
+*.safetensors
+*.onnx
+*.pth
+*.pt
+*.nemo
+*.gguf
+weight.bin

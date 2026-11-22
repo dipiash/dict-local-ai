@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>files.matching-independent-windows-listen-to</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>Matching independent windows: %lld. Listen to confirm.</string>
+			<key>other</key>
+			<string>Matching independent windows: %lld. Listen to confirm.</string>
+		</dict>
+	</dict>
+	<key>files.updated-segments-in-this-episode</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>Updated %lld segment in this episode.</string>
+			<key>other</key>
+			<string>Updated %lld segments in this episode.</string>
+		</dict>
+	</dict>
+	<key>history.records-in-history-change-the</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>History has %lld record. Change the filter to see it.</string>
+			<key>other</key>
+			<string>History has %lld records. Change the filter to see them.</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

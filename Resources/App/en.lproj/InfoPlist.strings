@@ -1,0 +1,3 @@
+"CFBundleGetInfoString" = "Dict Local AI — Your voice. Your Mac. Your data. Private on-device speech recognition.";
+"NSAudioCaptureUsageDescription" = "Capture system audio for on-device meeting transcription. The screen image is not recorded, and audio files are not saved.";
+"NSMicrophoneUsageDescription" = "Record your voice for on-device dictation. Audio is not sent to the cloud.";

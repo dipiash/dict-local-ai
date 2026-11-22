@@ -1,0 +1,14 @@
+{
+  "recordings": {},
+  "cases": [
+    {
+      "id": "example",
+      "recording": "example",
+      "start": 0,
+      "end": 5,
+      "verified": false,
+      "reference_text": "",
+      "speaker_turns": []
+    }
+  ]
+}

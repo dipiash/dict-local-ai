@@ -1,0 +1,129 @@
+version: "3"
+tasks:
+  hooks:install:
+    desc: Install staged-only commit checks
+    cmds:
+      - brew install lefthook biome actionlint swiftlint shellcheck
+      - lefthook install
+  default:
+    desc: List available tasks
+    cmds: [task --list]
+  setup:
+    desc: Install development tools through Homebrew
+    cmds:
+      - xcrun --find swift
+      - swift --version
+      - bash scripts/development/bootstrap-tools.sh
+  run:
+    desc: Open the installed app without rebuilding
+    cmds:
+      - 'open "$HOME/Applications/Dict Local AI.app"'
+  signing:setup:
+    desc: Create a persistent local code signing certificate in Keychain Access
+    interactive: true
+    cmds: [bash scripts/development/signing-setup.sh]
+  test:localization:
+    desc: Check language selection from the packaged macOS disk image
+    cmds: [bash scripts/development/test-localization-macos.sh]
+  test:contracts:
+    desc: Run portable source and packaging contracts
+    cmds:
+      - bash scripts/development/verify-system-audio.sh
+      - python3 scripts/development/verify-ui-tokens.py
+      - python3 -m unittest discover -s scripts/tests
+  test:
+    desc: Run source and packaging contracts, then all Swift test suites
+    cmds:
+      - task: test:contracts
+      - bash scripts/development/test.sh {{.CLI_ARGS}}
+  release:notarize:
+    desc: Build the Developer ID signed and notarized ZIP and DMG
+    cmds: [bash scripts/release/release-notarized.sh]
+  ui:smoke:
+    desc: Run native window smoke checks on macOS
+    cmds: [bash scripts/development/ui-smoke-macos.sh]
+  ui:geometry:
+    desc: Check that switching tabs preserves the window size on macOS
+    cmds: [bash scripts/development/ui-window-geometry-macos.sh]
+  test:ui:
+    desc: Check navigation and window geometry in the installed app (requires Accessibility access)
+    cmds:
+      - task: ui:smoke
+      - task: ui:geometry
+  lint:
+    desc: Run Swift format, SwiftLint and ShellCheck
+    cmds:
+      - bash scripts/development/lint.sh
+  format:
+    desc: Format Swift source
+    cmds:
+      [swift format format --in-place --recursive Sources Tests Package.swift]
+  check:
+    desc: Run lint and all regular automated tests (includes debug compilation)
+    cmds:
+      - task: lint
+      - task: test
+  build:
+    desc: Build, package, check portability and sign the Apple Silicon release app
+    cmds: [bash scripts/build/build.sh]
+  package:
+    desc: Create a release ZIP and checksum
+    cmds: [bash scripts/release/package.sh]
+  dmg:
+    desc: Create a local disk image
+    cmds: [bash scripts/release/package.sh --dmg]
+  install:
+    desc: Build, install or update, and open the app while preserving permissions
+    cmds: [bash scripts/development/install-local.sh]
+  uninstall:
+    desc: Remove the app and its TCC grants while keeping user data
+    cmds: [bash scripts/development/uninstall.sh]
+  uninstall:purge:
+    desc: Remove the app, TCC grants and user data after confirmation
+    interactive: true
+    cmds: [bash scripts/development/uninstall.sh --purge]
+  reinstall:
+    desc: Rebuild from scratch and preserve TCC grants
+    cmds:
+      - task: clean
+      - task: install
+  reinstall:purge:
+    desc: Remove app data after confirmation and reinstall from scratch
+    interactive: true
+    cmds:
+      - task: uninstall:purge
+      - task: clean
+      - task: install
+  permissions:doctor:
+    desc: Inspect signing, installed copies and TCC grants
+    cmds: [bash scripts/development/tcc-doctor.sh]
+  permissions:reset:
+    desc: Reset only Dict Local AI permissions and reopen the app after it has quit
+    cmds: [bash scripts/development/reset-permissions.sh]
+  logs:open:
+    desc: Open local logs in Finder
+    cmds: ['open "$HOME/Library/Logs/Dict Local AI"']
+  logs:tail:
+    desc: Show recent events from the active log
+    cmds:
+      - "bash scripts/development/tail-usage-logs.sh"
+  clean:
+    desc: Remove build output and preserve app data and logs
+    cmds:
+      - rm -rf .build .swiftpm dist
+  eval:benchmark:
+    desc: Calculate WER and DER against labeled reference clips
+    cmds:
+      - python3 scripts/evaluation/score.py {{.CLI_ARGS}}
+  eval:clips:
+    desc: Extract local clips for annotation
+    cmds:
+      - python3 scripts/evaluation/make_clips.py {{.CLI_ARGS}}
+  eval:wer:
+    desc: Calculate offline WER from an export and reference text
+    cmds:
+      - python3 scripts/evaluation/eval-transcript.py {{.CLI_ARGS}}
+  eval:diarization:
+    desc: Summarize Nemotron 3 speaker diagnostics and unassigned intervals
+    cmds:
+      - python3 scripts/evaluation/report-diarization.py {{.CLI_ARGS}}
