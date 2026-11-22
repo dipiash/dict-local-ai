@@ -1,1 +1,1 @@
-pyannote.metrics>=3.2,<5
+pyannote.metrics>=4.2.0,<5
