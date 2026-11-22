@@ -2,13 +2,13 @@
 
 Run `task check` on an Apple Silicon Mac. `DictCoreTests` covers transcript and recognition rules. `DictApplicationTests` covers dictation delivery, file and meeting workflows, and model setup. `DictStorageTests` exercises the SQLite adapter. `DictMacTests` covers native API contracts and adapters; Python tests guard packaging, paths and source-level layout contracts. On Linux the manifest excludes the macOS executable and native tests. Optional DER evaluation tests require `pyannote.metrics`; record any skips.
 
-| Command | Included checks |
-| --- | --- |
-| `task test:contracts` | System audio contract, UI tokens and all Python tests in `scripts/tests`. |
-| `task test` | `test:contracts`, then compilation and execution of all four Swift test suites. |
-| `task check` | `lint`, then `test`. Debug compilation is already included in `test`. |
-| `task test:ui` | `ui:smoke`, then `ui:geometry`, using the installed app and desktop. |
-| `task test:localization` | Build a DMG and check language selection and localized resources at runtime. |
+| Command                  | Included checks                                                                 |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| `task test:contracts`    | System audio contract, UI tokens and all Python tests in `scripts/tests`.       |
+| `task test`              | `test:contracts`, then compilation and execution of all four Swift test suites. |
+| `task check`             | `lint`, then `test`. Debug compilation is already included in `test`.           |
+| `task test:ui`           | `ui:smoke`, then `ui:geometry`, using the installed app and desktop.            |
+| `task test:localization` | Build a DMG and check language selection and localized resources at runtime.    |
 
 Stages run sequentially and stop on failure. Individual tests can be skipped
 when optional requirements are unavailable; check the reported skip count.
