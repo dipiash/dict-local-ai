@@ -14,19 +14,19 @@ task run          # open the installed app without rebuilding
 Run `task` to list available commands. Each operation has one command; there are
 no `open`, `update` or `eval:wer:test` aliases.
 
-| Command | Purpose |
-| --- | --- |
-| `task setup` | Install or check development tools. |
-| `task signing:setup` | Configure a persistent signing identity, usually once. |
-| `task format` | Apply Swift formatting to source and tests. |
-| `task lint` | Check Swift formatting, SwiftLint, ShellCheck and shell syntax. |
-| `task test` | Run source and packaging contracts, then all four Swift test suites. |
-| `task check` | Run `lint`, then `test`; stop if either fails. |
-| `task build` | Build the release app in `dist/`, package resources, check portability and sign it. |
-| `task install` | Run the release build, install or replace the existing app, and open it. |
-| `task run` | Open the installed app without building or installing. |
-| `task package` | Build the app and create a release ZIP and checksums. |
-| `task dmg` | Build the app and create a ZIP, DMG and checksums. |
+| Command              | Purpose                                                                             |
+| -------------------- | ----------------------------------------------------------------------------------- |
+| `task setup`         | Install or check development tools.                                                 |
+| `task signing:setup` | Configure a persistent signing identity, usually once.                              |
+| `task format`        | Apply Swift formatting to source and tests.                                         |
+| `task lint`          | Check Swift formatting, SwiftLint, ShellCheck and shell syntax.                     |
+| `task test`          | Run source and packaging contracts, then all four Swift test suites.                |
+| `task check`         | Run `lint`, then `test`; stop if either fails.                                      |
+| `task build`         | Build the release app in `dist/`, package resources, check portability and sign it. |
+| `task install`       | Run the release build, install or replace the existing app, and open it.            |
+| `task run`           | Open the installed app without building or installing.                              |
+| `task package`       | Build the app and create a release ZIP and checksums.                               |
+| `task dmg`           | Build the app and create a ZIP, DMG and checksums.                                  |
 
 `check` includes debug compilation through the Swift tests. It does not run a
 second debug build, build a release app, sign, install or open the app. Use
