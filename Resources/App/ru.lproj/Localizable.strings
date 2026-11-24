@@ -322,7 +322,7 @@
 "settings.permissions" = "Разрешения";
 "settings.press-a-key" = "Нажмите клавишу…";
 "settings.press-a-shortcut" = "Нажмите сочетание…";
-"settings.press-fn-twice-to-start" = "Двойное нажатие Fn также запускает запись без удержания. Esc отменяет запись.";
+"settings.hold-shortcut-to-toggle" = "Ненадолго зажмите сочетание, чтобы начать или остановить запись без удержания. Esc отменяет запись.";
 "settings.privacy" = "Приватность";
 "settings.processing-runs-on-your-mac" = "Обработка выполняется на вашем Mac.";
 "settings.readiness" = "Готовность";
