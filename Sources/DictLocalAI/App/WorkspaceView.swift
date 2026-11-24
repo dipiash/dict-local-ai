@@ -508,7 +508,7 @@ struct WorkspaceView: View {
             }
           }
         }
-        Text(L10n.text("settings.press-fn-twice-to-start"))
+        Text(L10n.text("settings.hold-shortcut-to-toggle"))
           .font(AppStyle.caption).foregroundStyle(.secondary)
         Button(L10n.text("settings.reset-to-left-option-fn")) {
           UsageTelemetry.action(.settings, .restoreShortcuts)

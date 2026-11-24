@@ -322,7 +322,7 @@
 "settings.permissions" = "Permissions";
 "settings.press-a-key" = "Press a key…";
 "settings.press-a-shortcut" = "Press a shortcut…";
-"settings.press-fn-twice-to-start" = "Press Fn twice to start hands-free recording. Press Esc to cancel.";
+"settings.hold-shortcut-to-toggle" = "Hold the shortcut briefly to start or stop hands-free recording. Press Esc to cancel.";
 "settings.privacy" = "Privacy";
 "settings.processing-runs-on-your-mac" = "Processing runs on your Mac.";
 "settings.readiness" = "Readiness";

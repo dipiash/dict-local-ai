@@ -3,7 +3,11 @@ import AppKit
 @MainActor
 final class Hotkeys {
   var hold = Shortcut.hold
-  var toggle = Shortcut.toggle
+  var toggle = Shortcut.toggle {
+    didSet {
+      if toggle != oldValue { cancelPendingToggle() }
+    }
+  }
   var enabled = true
   var capturing = false
   var isApplicationActive: () -> Bool = { NSApp?.isActive == true }
@@ -16,6 +20,8 @@ final class Hotkeys {
   private var tap: CFMachPort?
   private var source: CFRunLoopSource?
   private var pending: DispatchWorkItem?
+  private var pendingToggle: DispatchWorkItem?
+  private var toggleKeyDown: UInt16?
   private var holdDown = false
   private var leftOptionDown = false
   private var started = false
@@ -61,11 +67,17 @@ final class Hotkeys {
   func reset() {
     pending?.cancel()
     pending = nil
+    cancelPendingToggle()
+    toggleKeyDown = nil
     holdDown = false
     leftOptionDown = false
     started = false
     ignoreRelease = false
     previousTap = -.infinity
+  }
+  private func cancelPendingToggle() {
+    pendingToggle?.cancel()
+    pendingToggle = nil
   }
   func shutdown() {
     if let tap { CGEvent.tapEnable(tap: tap, enable: false) }
@@ -86,7 +98,7 @@ final class Hotkeys {
     }
     guard enabled, !capturing else { return false }
     var key = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
-    if key == 53, type == .keyDown, isBusy() || pending != nil {
+    if key == 53, type == .keyDown, isBusy() || pending != nil || pendingToggle != nil {
       reset()
       DispatchQueue.main.async { [weak self] in
         self?.onCancel()
@@ -94,20 +106,56 @@ final class Hotkeys {
       return true
     }
     let flags = event.flags.intersection(Shortcut.mask)
-    if isApplicationActive(),
-      (flags == .maskCommand && [0, 6, 7, 8, 9, 12].contains(key))
-        || (flags == [.maskCommand, .maskShift] && key == 6)
-    {
-      return false
-    }
     var down: Bool
     if type == .flagsChanged, let flag = Shortcut.modifierKeys[key] {
       down = flags.contains(flag)
     } else {
       down = type == .keyDown
     }
+    if type == .flagsChanged, key == 58 { leftOptionDown = down }
+    var toggleFlags = flags
+    if let own = Shortcut.modifierKeys[toggle.key] { toggleFlags.remove(own) }
+    if key == toggleKeyDown {
+      if !down {
+        cancelPendingToggle()
+        toggleKeyDown = nil
+      } else if toggleFlags.rawValue != toggle.modifiers {
+        cancelPendingToggle()
+      }
+      return true
+    }
+    if type == .keyDown || (type == .flagsChanged && toggleFlags.rawValue != toggle.modifiers) {
+      cancelPendingToggle()
+    }
+    if isApplicationActive(),
+      (flags == .maskCommand && [0, 6, 7, 8, 9, 12].contains(key))
+        || (flags == [.maskCommand, .maskShift] && key == 6)
+    {
+      return false
+    }
+    let isRepeat = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
+    if key == toggle.key, toggleFlags.rawValue == toggle.modifiers, down, !isRepeat,
+      toggleKeyDown == nil
+    {
+      toggleKeyDown = key
+      if pending != nil {
+        pending?.cancel()
+        pending = nil
+        ignoreRelease = holdDown
+      }
+      previousTap = -.infinity
+      let job = DispatchWorkItem { [weak self] in
+        guard let self else { return }
+        self.pendingToggle = nil
+        guard self.enabled, !self.capturing else { return }
+        self.ignoreRelease = self.holdDown
+        self.onToggle()
+      }
+      pendingToggle = job
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: job)
+      return true
+    }
     if type == .flagsChanged {
-      if key == 58 { leftOptionDown = down }
       // This device flag identifies left Option.
       let leftOption = leftOptionDown || event.flags.rawValue & 0x20 != 0
       if hold == .hold {
@@ -120,23 +168,7 @@ final class Hotkeys {
         }
       }
     }
-    var toggleFlags = flags
-    if let own = Shortcut.modifierKeys[toggle.key] { toggleFlags.remove(own) }
-    let toggleMatches = key == toggle.key && toggleFlags.rawValue == toggle.modifiers
-    if event.getIntegerValueField(.keyboardEventAutorepeat) != 0 {
-      return (holdDown && key == hold.key)
-        || toggleMatches
-    }
-    if toggleMatches, down {
-      pending?.cancel()
-      pending = nil
-      ignoreRelease = holdDown
-      previousTap = -.infinity
-      DispatchQueue.main.async { [weak self] in
-        self?.onToggle()
-      }
-      return true
-    }
+    if isRepeat { return holdDown && key == hold.key }
     if key == hold.key {
       var modifiers = flags
       if let own = Shortcut.modifierKeys[key] { modifiers.remove(own) }

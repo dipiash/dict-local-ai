@@ -84,6 +84,53 @@ final class HotkeyTests: XCTestCase {
     XCTAssertEqual(nextResult, .completed)
     keys.reset()
   }
+  func testQuickToggleChordsDoNotStartDictation() async {
+    let keys = Hotkeys()
+    let toggled = expectation(description: "releasing either key cancels the toggle")
+    toggled.isInverted = true
+    keys.onToggle = { toggled.fulfill() }
+
+    XCTAssertFalse(keys.handle(.flagsChanged, event(63, .maskSecondaryFn)))
+    XCTAssertTrue(keys.handle(.keyDown, event(49, .maskSecondaryFn)))
+    XCTAssertTrue(keys.handle(.keyUp, event(49, .maskSecondaryFn)))
+    XCTAssertFalse(keys.handle(.flagsChanged, event(63)))
+
+    keys.toggle = Shortcut(
+      key: 49, modifiers: CGEventFlags.maskControl.rawValue, label: "Ctrl Space")
+    XCTAssertTrue(keys.handle(.keyDown, event(49, .maskControl)))
+    XCTAssertFalse(keys.handle(.flagsChanged, event(59)))
+    XCTAssertFalse(keys.handle(.flagsChanged, event(59, .maskControl)))
+
+    let result = await XCTWaiter.fulfillment(of: [toggled], timeout: 0.5)
+    XCTAssertEqual(result, .completed)
+    XCTAssertTrue(keys.handle(.keyUp, event(49, .maskControl)))
+  }
+
+  func testHeldToggleFiresOnceUntilRelease() async {
+    let keys = Hotkeys()
+    let toggled = expectation(description: "holding Fn and Space toggles dictation")
+    var toggles = 0
+    keys.onToggle = {
+      toggles += 1
+      toggled.fulfill()
+    }
+    XCTAssertTrue(keys.handle(.keyDown, event(49, .maskSecondaryFn)))
+    XCTAssertEqual(toggles, 0)
+    XCTAssertTrue(keys.handle(.keyDown, event(49, .maskSecondaryFn, repeatKey: true)))
+    let result = await XCTWaiter.fulfillment(of: [toggled], timeout: 1)
+    XCTAssertEqual(result, .completed)
+
+    XCTAssertTrue(keys.handle(.keyDown, event(49, .maskSecondaryFn)))
+    XCTAssertTrue(keys.handle(.keyDown, event(49, .maskSecondaryFn, repeatKey: true)))
+    let repeated = expectation(description: "held shortcut does not toggle again")
+    repeated.isInverted = true
+    keys.onToggle = { repeated.fulfill() }
+    let repeatResult = await XCTWaiter.fulfillment(of: [repeated], timeout: 0.5)
+    XCTAssertEqual(repeatResult, .completed)
+    XCTAssertTrue(keys.handle(.keyUp, event(49)))
+    XCTAssertEqual(toggles, 1)
+  }
+
   @MainActor
   func testShutdownCancelsPendingHoldAndAllowsNextHold() async {
     let keys = Hotkeys()
