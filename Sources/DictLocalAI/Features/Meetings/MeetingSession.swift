@@ -17,7 +17,6 @@ final class MeetingSession: ObservableObject {
   @Published private(set) var systemAudioSilenceMinutes: Int?
   @Published private(set) var progress: Double?
   @Published private(set) var saveError = ""
-  @Published private(set) var savedMeetings: [SavedMeeting] = []
   @Published private(set) var selectedMeeting: UUID?
   @Published private(set) var unsaved = false
   var running: Bool { state != .idle }
@@ -46,7 +45,6 @@ final class MeetingSession: ObservableObject {
     self.ready = ready
     self.recognizer = recognizer
     self.preferences = preferences
-    reloadSaved()
     observers.append(
       NSWorkspace.shared.notificationCenter.addObserver(
         forName: NSWorkspace.willSleepNotification, object: nil, queue: .main
@@ -275,7 +273,6 @@ final class MeetingSession: ObservableObject {
     )
     workflow.finalize(&transcript, elapsed: elapsed, reason: reason)
     if selectedMeeting != nil && saveError.isEmpty { unsaved = false }
-    reloadSaved()
     workflow.release()
     state = .idle
     switch reason {
@@ -297,11 +294,6 @@ final class MeetingSession: ObservableObject {
     transcript = document
     unsaved = true
   }
-  func reloadSaved() {
-    do { savedMeetings = try workflow.saved() } catch {
-      saveError = L10n.text("meeting.could-not-read-meetings", L10n.error(error))
-    }
-  }
   func openSaved(_ meeting: SavedMeeting) {
     guard !running else { return }
     do {
@@ -322,7 +314,6 @@ final class MeetingSession: ObservableObject {
       unsaved = false
       saveError = ""
       message = L10n.text("meeting.meeting-changes-saved")
-      reloadSaved()
     } catch { saveError = L10n.text("meeting.could-not-save-meeting", L10n.error(error)) }
   }
   func deleteSaved(_ meeting: SavedMeeting) {
@@ -336,7 +327,6 @@ final class MeetingSession: ObservableObject {
       }
       saveError = ""
       message = L10n.text("meeting.meeting-deleted")
-      reloadSaved()
     } catch { saveError = L10n.error(error) }
   }
   func deleteSaved() {
@@ -349,7 +339,6 @@ final class MeetingSession: ObservableObject {
         unsaved = false
       }
       saveError = ""
-      savedMeetings = []
       message = L10n.text("meeting.all-saved-meetings-deleted")
     } catch { saveError = L10n.error(error) }
   }
