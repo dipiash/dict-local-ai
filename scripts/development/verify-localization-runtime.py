@@ -5,17 +5,17 @@ import subprocess
 import sys
 
 
-def check(app: Path) -> None:
+def verify_export_localization(app: Path) -> None:
     executable = app / "Contents/MacOS/DictLocalAI"
     reports = {
         "en": (
             "Source: sample.wav\nProcessed: Partial, up to 00:00:00\n"
-            "Timestamps are approximate, based on speech recognition, and start at the beginning of the session.\n\n"
+            "Timestamps start at the beginning of the session and come from speech recognition. Accuracy is about ±0.3 s.\n\n"
             "[00:00:00–00:00:02] Speaker 1: Тест Test"
         ),
         "ru": (
             "Источник: sample.wav\nОбработано: Частично, до 00:00:00\n"
-            "Таймкоды: от начала сессии, приблизительные, по распознаванию речи.\n\n"
+            "Таймкоды: от начала сессии, по распознаванию речи, точность около ±0,3 с.\n\n"
             "[00:00:00–00:00:02] Спикер 1: Тест Test"
         ),
     }
@@ -27,13 +27,13 @@ def check(app: Path) -> None:
         ("(fr, ru)", "ru"),
         ("(fr)", "en"),
     ):
-        language_arg = subprocess.check_output(
+        response_json = subprocess.check_output(
             [executable, "--check-localization", "-AppleLanguages", preferences],
             text=True,
             timeout=30,
         )
-        result = json.loads(language_arg)
-        fixtures = {
+        result = json.loads(response_json)
+        expected_strings = {
             "en": ("Files", "00:01 of 00:02", ("Updated 1 segment", "Updated 2 segments",
                                                "Updated 5 segments"), "Record your voice",
                    "Capture system audio"),
@@ -41,7 +41,7 @@ def check(app: Path) -> None:
                                              "Исправлено 5 реплик"), "Запись вашей речи",
                    "Захват звука других приложений"),
         }
-        title, progress, plurals, microphone, system_audio = fixtures[expected]
+        title, progress, plurals, microphone, system_audio = expected_strings[expected]
         if not (
             {"en", "ru"} <= set(result["available"].split(","))
             and result["development"] == "en"
@@ -55,9 +55,9 @@ def check(app: Path) -> None:
             and result["microphone"].startswith(microphone)
             and result["systemAudio"].startswith(system_audio)
         ):
-            raise SystemExit(f"Localization failed for {preferences}: {result!r}")
-        print(f"Localization passed for {preferences}: {expected}")
+            raise SystemExit(f"Unexpected localization for {preferences}: {result!r}")
+        print(f"Verified localization for {preferences}: {expected}")
 
 
 if __name__ == "__main__":
-    check(Path(sys.argv[1]))
+    verify_export_localization(Path(sys.argv[1]))
