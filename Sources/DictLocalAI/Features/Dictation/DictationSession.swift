@@ -32,6 +32,9 @@ final class DictationSession: ObservableObject {
   @Published private(set) var level: Float = 0
   @Published private(set) var handsFree = false
   @Published private(set) var noticeIsSuccess = false
+  /// Shown over other apps when the dictation shortcut is pressed during a meeting or file job.
+  @Published private(set) var busyNotice: String?
+  private var dismissBlockMessageTask: Task<Void, Never>?
   var onShowPanel: () -> Void = {}
   var onHidePanel: () -> Void = {}
   var onShowActionResult: () -> Void = {}
@@ -112,9 +115,15 @@ final class DictationSession: ObservableObject {
   }
   func start(handsFree: Bool) {
     guard let acquired = workflow.start(enabled: preferences.enabled, phase: phase) else {
-      DiagnosticLog.shared.event("dictation", "start_rejected", "phase=\(phase)")
+      let busy = workflow.busy
+      DiagnosticLog.shared.event(
+        "dictation", "start_rejected", "phase=\(phase) busy=\(busy.rawValue)")
+      if preferences.enabled, phase.canStart, let key = Self.blockedDictationMessageKey(busy) {
+        explainDictationBlock(L10n.text(key))
+      }
       return
     }
+    dismissDictationBlock()
     noticeDismissTask?.cancel()
     onHideActionResult()
     onHidePanel()
@@ -215,6 +224,28 @@ final class DictationSession: ObservableObject {
       }
     }
   }
+  static func blockedDictationMessageKey(_ busy: DictationWorkflow.Busy) -> String? {
+    switch busy {
+    case .meeting: "dictation.busy-meeting"
+    case .file: "dictation.busy-file"
+    case .none: nil
+    }
+  }
+  private func explainDictationBlock(_ value: String) {
+    dismissBlockMessageTask?.cancel()
+    busyNotice = value
+    onShowPanel()
+    dismissBlockMessageTask = Task { [weak self] in
+      do { try await Task.sleep(for: .milliseconds(3000)) } catch { return }
+      self?.dismissDictationBlock()
+    }
+  }
+  private func dismissDictationBlock() {
+    dismissBlockMessageTask?.cancel()
+    guard busyNotice != nil else { return }
+    busyNotice = nil
+    if phase == .idle { onHidePanel() }
+  }
   func toggle() {
     DiagnosticLog.shared.event(
       "dictation", "hotkey_toggle", "phase=\(phase) handsFree=\(handsFree)")
@@ -309,7 +340,8 @@ final class DictationSession: ObservableObject {
           completion, saveHistory: self.preferences.saveHistory,
           insert: { text in
             self.allowInsertion
-              ? TextInsertion.insert(text, target: self.completionTarget) : .unavailable
+              ? TextInsertion.insert(
+                text, target: self.completionTarget) : .unavailable
           },
           insertInEditor: { text in
             self.allowInsertion && self.internalEditorWasTarget && self.internalEditorFocused
@@ -452,6 +484,7 @@ final class DictationSession: ObservableObject {
   }
   func cancel() {
     noticeDismissTask?.cancel()
+    dismissDictationBlock()
     DiagnosticLog.shared.event("dictation", "cancel", "phase=\(phase)")
     preparingMicrophone = false
     pendingFinish = false

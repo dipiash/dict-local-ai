@@ -42,6 +42,8 @@
 "dictation.keyboard-input-was-interrupted-recording" = "Keyboard input was interrupted. Recording stopped.";
 "dictation.listening" = "Listening…";
 "dictation.no-speech-detected" = "No speech detected.";
+"dictation.busy-meeting" = "A meeting is running. Dictation is not available.";
+"dictation.busy-file" = "A file is being transcribed. Dictation is not available.";
 "dictation.paste-requested-check-the-target" = "Paste requested. Check the target field. The text is available in the app menu.";
 "dictation.preparing-to-record" = "Preparing to record…";
 "dictation.process-again" = "Process Again";

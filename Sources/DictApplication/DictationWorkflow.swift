@@ -18,6 +18,17 @@ public struct DictationWorkflow {
     return modes.acquire(.dictation)
   }
 
+  public enum Busy: String, Sendable { case meeting, file, none }
+
+  /// The mode that blocks dictation from starting, for the message and the log.
+  public var busy: Busy {
+    switch modes.active {
+    case .meeting: .meeting
+    case .file: .file
+    case .dictation, nil: .none
+    }
+  }
+
   public func canRetry(phase: DictationPhase) -> Bool {
     phase == .failed || phase == .interrupted
   }

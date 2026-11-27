@@ -42,6 +42,8 @@
 "dictation.keyboard-input-was-interrupted-recording" = "Приём клавиш прерван. Запись остановлена.";
 "dictation.listening" = "Слушаю…";
 "dictation.no-speech-detected" = "Речь не обнаружена.";
+"dictation.busy-meeting" = "Идёт встреча, диктовка недоступна.";
+"dictation.busy-file" = "Идёт расшифровка файла, диктовка недоступна.";
 "dictation.paste-requested-check-the-target" = "Команда вставки отправлена. Проверьте поле; текст доступен в меню приложения.";
 "dictation.preparing-to-record" = "Подготавливаем запись…";
 "dictation.process-again" = "Повторить обработку";
