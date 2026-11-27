@@ -29,6 +29,9 @@ struct RecordingView: View {
           }
         } else if controller.phase == .processing {
           ProgressView().controlSize(.small)
+        } else if controller.busyNotice != nil {
+          Image(systemName: "info.circle.fill").foregroundStyle(Color.secondary)
+            .accessibilityHidden(true)
         } else if controller.phase == .result {
           Image(
             systemName: controller.noticeIsSuccess
@@ -37,7 +40,7 @@ struct RecordingView: View {
           .foregroundStyle(controller.noticeIsSuccess ? Color.green : Color.secondary)
           .accessibilityHidden(true)
         }
-        Text(controller.message).font(AppStyle.body).lineLimit(3)
+        Text(controller.busyNotice ?? controller.message).font(AppStyle.body).lineLimit(3)
         Spacer(minLength: 0)
         if controller.phase == .recording && controller.handsFree {
           Button(L10n.text("recording.finish")) {

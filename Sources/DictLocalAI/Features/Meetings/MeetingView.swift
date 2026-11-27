@@ -144,7 +144,18 @@ struct MeetingView: View {
 
 struct MeetingRecordingView: View {
   @ObservedObject var controller: MeetingSession
+  @ObservedObject var dictation: DictationSession
   var body: some View {
+    VStack(spacing: DesignTokens.Spacing.s) {
+      if let notice = dictation.busyNotice {
+        Text(notice).font(AppStyle.body).lineLimit(2)
+      }
+      controls
+    }.padding(DesignTokens.Spacing.m).background(
+      .regularMaterial, in: RoundedRectangle(cornerRadius: DesignTokens.Layout.recordingPanelRadius)
+    )
+  }
+  private var controls: some View {
     HStack(spacing: DesignTokens.Spacing.m) {
       Image(systemName: "waveform").symbolEffect(.pulse, options: .repeating)
       Text(L10n.text("meeting.meeting", "\(FileTranscript.time(Double(controller.elapsed)))"))
@@ -156,8 +167,6 @@ struct MeetingRecordingView: View {
         UsageTelemetry.action(.meeting, .stopMeeting)
         controller.stop()
       }.disabled(controller.state == .finishing)
-    }.padding(DesignTokens.Spacing.m).background(
-      .regularMaterial, in: RoundedRectangle(cornerRadius: DesignTokens.Layout.recordingPanelRadius)
-    )
+    }
   }
 }

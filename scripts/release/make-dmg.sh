@@ -37,13 +37,25 @@ if setfile=$(xcrun --find SetFile 2>/dev/null); then
   "$setfile" -a C "$stage"
 fi
 
-/usr/bin/hdiutil create \
-  -volname 'Dict Local AI' \
-  -srcfolder "$stage" \
-  -fs HFS+ \
-  -format UDZO \
-  -ov \
-  "$temporary_output"
+for attempt in 1 2 3; do
+  if output_log=$(LC_ALL=C /usr/bin/hdiutil create \
+    -volname 'Dict Local AI' \
+    -srcfolder "$stage" \
+    -fs HFS+ \
+    -format UDZO \
+    -ov \
+    "$temporary_output" 2>&1); then
+    printf '%s\n' "$output_log"
+    break
+  else
+    status=$?
+    printf '%s\n' "$output_log" >&2
+    if [[ "$attempt" -eq 3 || "$output_log" != *"Resource busy"* ]]; then
+      exit "$status"
+    fi
+    sleep "$((attempt * 2))"
+  fi
+done
 
 mv -f "$temporary_output" "$output"
 echo "Created DMG without opening Finder: $output"

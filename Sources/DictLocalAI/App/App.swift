@@ -119,7 +119,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
       guard let self else { return }
       if state == .recording {
         self.panel.contentView = PanelHostingView(
-          rootView: MeetingRecordingView(controller: self.controller.meeting))
+          rootView: MeetingRecordingView(
+            controller: self.controller.meeting, dictation: self.controller.dictation))
         self.status.button?.contentTintColor = .systemRed
         self.showPanel()
       } else if state == .idle {
