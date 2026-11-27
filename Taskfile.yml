@@ -36,6 +36,10 @@ tasks:
     cmds:
       - task: test:contracts
       - bash scripts/development/test.sh {{.CLI_ARGS}}
+  eval:transcribe:
+    desc: "Transcribe a local audio file without windows: task eval:transcribe -- FILE file|meeting OUT.json"
+    cmds:
+      - bash scripts/development/recognize-audio.sh {{.CLI_ARGS}}
   release:notarize:
     desc: Build the Developer ID signed and notarized ZIP and DMG
     cmds: [bash scripts/release/release-notarized.sh]
