@@ -31,7 +31,7 @@ final class HistoryAudioFile: @unchecked Sendable {
   private let stopLock = NSLock()
   private var importCancellationRequested = false
 
-  init(kind: Kind, directory: URL = HistoryAudioFile.directory(in: Paths.root)) throws {
+  init(kind: Kind, directory: URL = HistoryAudioFile.directory(in: Paths.data)) throws {
     self.kind = kind
     try FileManager.default.createDirectory(
       at: directory, withIntermediateDirectories: true,
@@ -145,7 +145,7 @@ final class HistoryAudioFile: @unchecked Sendable {
   /// Saves already captured samples, for example a finished dictation.
   static func save(
     _ samples: [Float], enabled: Bool = true,
-    directory: URL = HistoryAudioFile.directory(in: Paths.root)
+    directory: URL = HistoryAudioFile.directory(in: Paths.data)
   ) -> HistoryAudioFile? {
     guard !samples.isEmpty,
       let audio = make(kind: .dictation, enabled: enabled, directory: directory)
@@ -160,7 +160,7 @@ final class HistoryAudioFile: @unchecked Sendable {
   /// `limitSeconds` keeps only the processed part of a canceled transcription.
   static func copy(
     from source: URL, enabled: Bool = true, limitSeconds: Double? = nil,
-    directory: URL = HistoryAudioFile.directory(in: Paths.root),
+    directory: URL = HistoryAudioFile.directory(in: Paths.data),
     onUnreadable: @escaping @Sendable (String) -> Void = { _ in }
   ) -> HistoryAudioFile? {
     guard let audio = make(kind: .file, enabled: enabled, directory: directory) else { return nil }
@@ -212,7 +212,7 @@ final class HistoryAudioFile: @unchecked Sendable {
 
   /// `enabled` is the "Save audio" setting: when off, no file is created at all.
   static func make(
-    kind: Kind, enabled: Bool = true, directory: URL = HistoryAudioFile.directory(in: Paths.root)
+    kind: Kind, enabled: Bool = true, directory: URL = HistoryAudioFile.directory(in: Paths.data)
   ) -> HistoryAudioFile? {
     guard enabled else { return nil }
     do { return try HistoryAudioFile(kind: kind, directory: directory) } catch {

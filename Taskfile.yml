@@ -49,18 +49,30 @@ tasks:
   ui:geometry:
     desc: Check that switching tabs preserves the window size on macOS
     cmds: [bash scripts/development/ui-window-geometry-macos.sh]
-  test:ui:
-    desc: Check navigation and window geometry in the installed app (requires Accessibility access)
-    cmds:
-      - task: ui:smoke
-      - task: ui:geometry
   ui:busy-notice:
     desc: Check the busy-dictation notice and panel position during a meeting (starts a real meeting)
     cmds: [bash scripts/development/ui-busy-notice-macos.sh]
+  ui:history-audio:
+    desc: Check listening in History on a throw-away data folder (DICT_DATA_DIR)
+    cmds: [bash scripts/development/ui-history-audio-macos.sh]
+  ui:storage-settings:
+    desc: Check Settings > Storage on a throw-away data folder (DICT_DATA_DIR)
+    cmds: [bash scripts/development/ui-storage-settings-macos.sh]
+  ui:clipboard-restore:
+    desc: Check that the clipboard is restored after a dictation (uses your clipboard, microphone and speakers)
+    cmds: [bash scripts/development/ui-clipboard-restore-macos.sh]
+  test:ui:
+    desc: "Safe UI checks of the installed app: navigation, window geometry, History audio and Storage settings on a temp data folder (requires Accessibility access)"
+    cmds:
+      - task: ui:smoke
+      - task: ui:geometry
+      - task: ui:history-audio
+      - task: ui:storage-settings
   test:ui:live:
-    desc: Run live UI scenarios while the desktop is idle and no meeting is running
+    desc: "Live UI scenarios: start a meeting, move windows and press menu items. Run only when you are away from the computer and no real meeting is running"
     cmds:
       - task: ui:busy-notice
+      - task: ui:clipboard-restore
   lint:
     desc: Run Swift format, SwiftLint and ShellCheck
     cmds:

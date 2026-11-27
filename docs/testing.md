@@ -7,8 +7,8 @@ Run `task check` on an Apple Silicon Mac. `DictCoreTests` covers transcript and 
 | `task test:contracts`    | System audio contract, UI tokens and all Python tests in `scripts/tests`.       |
 | `task test`              | `test:contracts`, then compilation and execution of all four Swift test suites. |
 | `task check`             | `lint`, then `test`. Debug compilation is already included in `test`.           |
-| `task test:ui`           | Routine UI checks of navigation and window geometry.                            |
-| `task test:ui:live`      | Live UI scenario: `ui:busy-notice` (starts a real meeting).                     |
+| `task test:ui`           | Safe UI checks of the installed app: smoke, geometry, history audio, storage.   |
+| `task test:ui:live`      | Live UI scenarios: `ui:busy-notice` (real meeting), `ui:clipboard-restore`.     |
 | `task test:localization` | Build a DMG and check language selection and localized resources at runtime.    |
 
 Stages run sequentially and stop on failure. Individual tests can be skipped
@@ -37,7 +37,9 @@ TSan finds data races only. Ordering bugs are caught by the order tests, not by 
 
 - **Contracts.** `task test:contracts` runs the Python tests in `scripts/tests`: packaging, paths, UI tokens and source-level layout rules.
 - **Localization.** `task test:localization` builds a DMG and checks language selection and localized resources at runtime.
-- **UI checks** require Accessibility access for the terminal. Run `task test:ui` for navigation and window geometry. Run `task test:ui:live` only on an idle desktop with no meeting in progress. It starts a meeting, moves its panel, and checks the notice for blocked dictation.
+- **UI checks** need Accessibility access for the terminal that runs them. `task test:ui` is safe: `ui:smoke` checks navigation, `ui:geometry` checks window size, `ui:history-audio` checks listening in History (Listen and Stop button, segment play buttons, with facts taken from the log) and `ui:storage-settings` checks Settings > Storage (audio size, "Delete all audio", the "Save audio" switch, the logs button). The last two run a separate copy of the installed app on a throw-away data folder: they set `DICT_DATA_DIR` and `DICT_LOG_DIR` to a `dict-ui-*` temp folder and seed one record with a short synthetic voice (`--add-history-fixture`, development only). Your history, audio and settings are not touched. The scripts refuse to run if a recording or meeting is in progress, close the regular app, and open it again at the end. They need an installed build that supports `DICT_DATA_DIR`. Models are read from the normal place. `task test:ui:live` starts a real meeting, moves windows and presses menu items, and `ui:clipboard-restore` dictates into a TextEdit document and checks that your clipboard comes back (it changes your clipboard, uses the microphone and speaks through the speakers). Run it only when you are away from the computer and no real meeting is running. Neither task can check Fn-key behavior: a synthetic Fn event does not reach the app.
+- **Kept test data.** If a `ui:*` scenario fails, its `dict-ui-*` temp folder stays and the logs of the test copy are copied to `~/Library/Logs/Dict Local AI/ui-tests/<scenario>-<time>/` (the path is the last line printed); `UI_KEEP=1` keeps the folder after a pass too. Only `dict-ui-*` folders in the temp area are ever deleted.
+- **Manual checks in History** (the AX automation could not drive them reliably): seek with the slider by mouse drag or click (`play_seek source=slider` in the log; the script covers one slider step through accessibility, but setting the slider value through accessibility does not seek), and typing in a segment while the sound plays (the text must stay and the sound must not stop). The scripts stop with "Test window is not active" if the test copy loses focus, so they never type into another window; do not switch windows while `task test:ui` runs.
 - **Manual only.** Check on a live meeting: hold-to-talk and hands-free shortcuts with the real Fn key, Bluetooth headset switching, and meeting sound (system audio and microphone).
 
 ## Continuous integration

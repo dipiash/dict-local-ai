@@ -70,6 +70,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     DiagnosticLog.shared.event(
       "app", "launch",
       "pid=\(ProcessInfo.processInfo.processIdentifier) bundle=\(Bundle.main.bundlePath)")
+    if ApplicationDataLocation.override() != nil {
+      DiagnosticLog.shared.event("app", "data_dir=override")
+    }
     DiagnosticLog.shared.startWatchdog()
     status = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     status.button?.image = NSImage(
@@ -230,7 +233,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     permissionRefreshTimer?.invalidate()
     historyRefreshTimer?.invalidate()
     DiagnosticLog.shared.event("app", "terminate")
+    DiagnosticLog.shared.event("app", "shutdown_begin")
+    let began = ProcessInfo.processInfo.systemUptime
     controller.shutdown()
+    let millis = Int((ProcessInfo.processInfo.systemUptime - began) * 1_000)
+    DiagnosticLog.shared.event("app", "shutdown_end", "ms=\(millis)")
   }
   func menuNeedsUpdate(_ menu: NSMenu) {
     menu.removeAllItems()
@@ -561,8 +568,12 @@ enum ApplicationMenus {
 
 @main enum DictLocalAIApplication {
   @MainActor static func main() {
+    // Handle development commands before starting AppKit or checking for another app instance.
     if let command = RecognitionArguments.parse(Array(CommandLine.arguments.dropFirst())) {
       RecognitionCommandRunner.start(command)
+    }
+    if let command = HistoryFixtureArguments.parse(Array(CommandLine.arguments.dropFirst())) {
+      HistoryFixtureRunner.start(command)
     }
     if CommandLine.arguments.contains("--check-localization") {
       LocalizationCheck.printResult()

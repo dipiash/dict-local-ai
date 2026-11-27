@@ -5,7 +5,7 @@ import DictCore
 
 @MainActor
 final class AppServices: ObservableObject {
-  let preferences = Preferences(storage: UserDefaultsPreferences())
+  let preferences = Preferences(storage: PreferencesFactory.make())
   let history = HistoryStore(
     history: RecordingHistory(repository: { try RecordingDatabase.require() }))
   let hotkeys = Hotkeys()
@@ -263,6 +263,7 @@ final class AppServices: ObservableObject {
     }
   }
   func shutdown() {
+    history.audio.stop()
     meeting.shutdown()
     files.shutdown()
     dictation.shutdown()
