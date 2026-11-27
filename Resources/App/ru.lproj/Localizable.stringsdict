@@ -62,5 +62,25 @@
 			<string>В истории %lld записей. Переключите фильтр, чтобы увидеть их.</string>
 		</dict>
 	</dict>
+	<key>settings.audio-files</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>few</key>
+			<string>%lld файла</string>
+			<key>many</key>
+			<string>%lld файлов</string>
+			<key>one</key>
+			<string>%lld файл</string>
+			<key>other</key>
+			<string>%lld файла</string>
+		</dict>
+	</dict>
 </dict>
 </plist>

@@ -557,6 +557,7 @@ struct WorkspaceView: View {
         .disabled(!preferences.saveHistory)
         Text(L10n.text("settings.save-audio-hint"))
           .font(AppStyle.caption).foregroundStyle(.secondary)
+        AudioStorageControls(history: controller.history)
       }
     }
   }

@@ -186,5 +186,61 @@ final class HistoryStore: ObservableObject {
     }
   }
 
+  /// Nil until the first count is ready or when it failed.
+  @Published private(set) var audioUsage: AudioStorageUsage?
+  @Published private(set) var audioUsageFailed = false
+  @Published private(set) var removingAudio = false
+  @Published private(set) var audioRemovalError: String?
+  private var audioUsageRevision = 0
+
+  // Read directory sizes on a background queue to keep Settings responsive.
+  func reloadAudioStorageUsage() {
+    audioUsageRevision += 1
+    let current = audioUsageRevision
+    let history = history
+    Task {
+      let result = await Task.detached(priority: .utility) {
+        Result { try history.audioUsage() }
+      }.value
+      guard current == audioUsageRevision else { return }
+      switch result {
+      case .success(let usage):
+        audioUsage = usage
+        audioUsageFailed = false
+      case .failure(let error):
+        DiagnosticLog.shared.event(
+          "history-audio", "usage_failed", "error_type=\(type(of: error))")
+        audioUsageFailed = true
+      }
+    }
+  }
+
+  func clearSavedAudio() {
+    guard !removingAudio else { return }
+    removingAudio = true
+    audioRemovalError = nil
+    audio.stop(reason: .stopped)
+    let history = history
+    Task {
+      let result = await Task.detached(priority: .userInitiated) {
+        Result { try history.clearSavedAudio(active: { HistoryAudioFile.active }) }
+      }.value
+      removingAudio = false
+      switch result {
+      case .success(let removal):
+        DiagnosticLog.shared.event(
+          "history-audio", "removed_all",
+          "files=\(removal.files) mb=\(DiagnosticFields.megabytes(removal.bytes)) "
+            + "skipped_active=\(removal.skippedActive)")
+        if !draft.isDirty { openDraft(draft.id) }
+      case .failure(let error):
+        DiagnosticLog.shared.event(
+          "history-audio", "remove_all_failed", DiagnosticFields.error(error))
+        audioRemovalError = L10n.text("settings.could-not-delete-audio", L10n.error(error))
+      }
+      reloadAudioStorageUsage()
+    }
+  }
+
   func prune() { reload() }
 }
