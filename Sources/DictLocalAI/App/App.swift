@@ -551,6 +551,9 @@ enum ApplicationMenus {
 
 @main enum DictLocalAIApplication {
   @MainActor static func main() {
+    if let command = RecognitionArguments.parse(Array(CommandLine.arguments.dropFirst())) {
+      RecognitionCommandRunner.start(command)
+    }
     if CommandLine.arguments.contains("--check-localization") {
       LocalizationCheck.printResult()
       return
