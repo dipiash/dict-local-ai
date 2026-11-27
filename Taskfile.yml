@@ -25,6 +25,9 @@ tasks:
   test:localization:
     desc: Check language selection from the packaged macOS disk image
     cmds: [bash scripts/development/test-localization-macos.sh]
+  test:shortcut-concurrency:
+    desc: Run macOS shortcut concurrency tests with Thread Sanitizer
+    cmds: [bash scripts/development/test-shortcut-concurrency.sh]
   test:contracts:
     desc: Run portable source and packaging contracts
     cmds:

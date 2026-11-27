@@ -87,10 +87,19 @@ jobs:
           swift --version
       - name: Install development tools
         run: bash scripts/development/bootstrap-tools.sh
+      - name: Install Python test dependencies
+        run: |
+          python_dir="$RUNNER_TEMP/dict-check-python"
+          python3 -m venv "$python_dir"
+          "$python_dir/bin/python3" -m pip install -r scripts/evaluation/requirements.txt
+          "$python_dir/bin/python3" -c "from pyannote.metrics.diarization import DiarizationErrorRate"
+          printf '%s\n' "$python_dir/bin" >> "$GITHUB_PATH"
       - name: Check native build, tests and lint
         run: task check
       - name: Verify localization from DMG
         run: task test:localization
+      - name: Check shortcut concurrency with Thread Sanitizer
+        run: task test:shortcut-concurrency
       - name: Verify dependency pin
         run: |
           python3 - <<'PY'
