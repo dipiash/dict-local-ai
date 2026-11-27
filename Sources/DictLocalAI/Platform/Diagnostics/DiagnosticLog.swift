@@ -16,15 +16,8 @@ final class DiagnosticLog: @unchecked Sendable {
   private var dropped = DroppedLogRun()
 
   private init() {
-    let environment = ProcessInfo.processInfo.environment
     let fileManager = FileManager.default
-    let libraryDirectory =
-      fileManager.urls(for: .libraryDirectory, in: .userDomainMask).first
-      ?? fileManager.homeDirectoryForCurrentUser.appendingPathComponent(
-        "Library", isDirectory: true)
-    let base = DiagnosticLogDirectory.resolve(
-      libraryDirectory: libraryDirectory,
-      overridePath: environment["DICT_LOG_DIR"])
+    let base = DiagnosticLogDirectory.activeDirectory()
     try? fileManager.createDirectory(
       at: base, withIntermediateDirectories: true,
       attributes: [.posixPermissions: 0o700])

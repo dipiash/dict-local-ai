@@ -30,4 +30,19 @@ final class DiagnosticLogDirectoryTests: XCTestCase {
       DiagnosticLogDirectory.resolve(libraryDirectory: library, overridePath: "").path,
       "/Users/guest/Library/Logs/Dict Local AI")
   }
+
+  func testCurrentReadsEnvironmentOverride() {
+    XCTAssertEqual(
+      DiagnosticLogDirectory.activeDirectory(environment: [
+        "DICT_LOG_DIR": "/tmp/dict-local-ai-debug"
+      ])
+      .path,
+      "/tmp/dict-local-ai-debug")
+  }
+
+  func testDefaultLogDirectoryBelongsToTheApp() {
+    XCTAssertTrue(
+      DiagnosticLogDirectory.activeDirectory(environment: [:]).path.hasSuffix("/Logs/Dict Local AI")
+    )
+  }
 }

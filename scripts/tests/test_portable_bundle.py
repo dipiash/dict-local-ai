@@ -23,7 +23,7 @@ class PortableBundleContractTests(unittest.TestCase):
         package = (ROOT / 'scripts/release/package.sh').read_text()
         self.assertIn('verify-portable-bundle.py', package)
         self.assertIn('shasum -a 256 Dict-Local-AI.dmg >> SHA256SUMS', package)
-        self.assertIn('DiagnosticLogDirectory.resolve(', logger)
+        self.assertIn('DiagnosticLogDirectory.activeDirectory(', logger)
 
     def test_capture_hang_uses_same_runtime_directory(self):
         helper = (ROOT / 'scripts/development/capture-hang.sh').read_text()

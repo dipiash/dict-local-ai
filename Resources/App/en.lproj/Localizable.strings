@@ -398,3 +398,6 @@
 "workspace.done" = "Done";
 "workspace.microphone-access-required" = "Microphone Access Required";
 "workspace.recognition-stays-on-your-mac" = "Recognition stays on your Mac";
+"settings.logs" = "Logs";
+"settings.open-logs" = "Open logs folder";
+"settings.open-logs-hint" = "Logs have events only, no text of your recordings.";

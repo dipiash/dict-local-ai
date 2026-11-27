@@ -398,3 +398,6 @@
 "workspace.done" = "Готово";
 "workspace.microphone-access-required" = "Нужен доступ к микрофону";
 "workspace.recognition-stays-on-your-mac" = "Распознавание остаётся на Mac";
+"settings.logs" = "Логи";
+"settings.open-logs" = "Открыть папку логов";
+"settings.open-logs-hint" = "В логах только события, без текста записей.";
