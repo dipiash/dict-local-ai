@@ -2,7 +2,14 @@ import DictApplication
 import SwiftUI
 
 struct ModelsView: View {
-  @ObservedObject var controller: AppServices
+  let speechReady: Bool
+  let speakerModelsReady: Bool
+  let installing: Bool
+  let progress: Double?
+  let message: String
+  let installDisabled: Bool
+  let modelRevision: @MainActor (ManagedModel) -> String?
+  let installModel: @MainActor (ManagedModel) -> Void
 
   var body: some View {
     SettingsFormPage(
@@ -16,27 +23,27 @@ struct ModelsView: View {
       SettingsSection("Parakeet Ultra") {
         modelCard(
           kind: .ultra,
-          ready: controller.ready,
+          ready: speechReady,
           detail: L10n.text("models.speech-recognition-for-dictation-meetings"))
       }
       SettingsSection("Nemotron 3 · fast32 + fast128") {
         modelCard(
           kind: .nemotron,
-          ready: controller.speakerModelsReady,
+          ready: speakerModelsReady,
           detail:
             L10n.text("models.speaker-labels-for-files-fast128")
         )
       }
       SettingsSection(L10n.text("models.status")) {
-        if controller.installing {
-          if let value = controller.progress {
+        if installing {
+          if let value = progress {
             ProgressView(value: value).accessibilityIdentifier("models-download-progress")
             Text("\(Int(value * 100))%").monospacedDigit()
           } else {
             ProgressView().accessibilityIdentifier("models-download-progress")
           }
         }
-        Text(controller.setupMessage).font(AppStyle.caption).foregroundStyle(.secondary)
+        Text(message).font(AppStyle.caption).foregroundStyle(.secondary)
         Text(
           L10n.text("models.the-app-records-the-hugging")
         )
@@ -56,16 +63,16 @@ struct ModelsView: View {
       }
       Text(detail).font(AppStyle.caption).foregroundStyle(.secondary)
       HStack {
-        if let revision = controller.modelRevision(kind) {
+        if let revision = modelRevision(kind) {
           Text("HF SHA: \(revision.prefix(12))")
             .font(AppStyle.caption).monospaced().foregroundStyle(.secondary)
         }
         Spacer()
         Button(ready ? L10n.text("models.reinstall") : L10n.text("models.download")) {
           UsageTelemetry.action(.models, ready ? .modelReinstall : .modelInstall)
-          controller.installModel(kind)
+          installModel(kind)
         }
-        .disabled(controller.installing || controller.modes.active != nil)
+        .disabled(installDisabled)
         .accessibilityIdentifier("install-model-\(kind.rawValue)")
       }
     }

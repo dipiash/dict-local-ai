@@ -3,7 +3,8 @@ import SwiftUI
 
 struct FileTranscriptionView: View {
   @ObservedObject var controller: FileTranscriptionSession
-  @ObservedObject var models: AppServices
+  let speechReady: Bool
+  let speakerModelsReady: Bool
   @State private var confirmReplace = false
   @State private var confirmRetry = false
   @State private var mergeCandidateIndex: Int?
@@ -119,7 +120,7 @@ struct FileTranscriptionView: View {
               .font(AppStyle.caption).foregroundStyle(.secondary)
               .fixedSize(horizontal: false, vertical: true)
           }
-          if !models.ready || (controller.identifySpeakers && !models.speakerModelsReady) {
+          if !speechReady || (controller.identifySpeakers && !speakerModelsReady) {
             WorkspaceStatusBanner(
               message: L10n.text("files.install-parakeet-ultra-and-nemotron"),
               kind: .warning)
@@ -134,8 +135,8 @@ struct FileTranscriptionView: View {
               }
             }
             .disabled(
-              controller.running || !models.ready
-                || (controller.identifySpeakers && !models.speakerModelsReady))
+              controller.running || !speechReady
+                || (controller.identifySpeakers && !speakerModelsReady))
             if controller.running {
               Button(L10n.text("menu.undo")) {
                 UsageTelemetry.action(.files, .cancelFile)

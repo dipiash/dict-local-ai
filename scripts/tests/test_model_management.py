@@ -11,9 +11,10 @@ def source(filename):
 
 class ModelManagementContractTests(unittest.TestCase):
     def test_only_settings_models_view_offers_download_action(self):
-        self.assertIn("controller.installModel(kind)", source("ModelsView.swift"))
+        self.assertIn("installModel(kind)", source("ModelsView.swift"))
         views = workspace_source()
-        self.assertIn("case .models: ModelsView(controller: controller)", views)
+        self.assertRegex(views, r"case \.models:\s+ModelsView\(")
+        self.assertIn("installModel: controller.installModel", views)
         self.assertIn("case models", views)
         self.assertIn("static let primary: [WorkspaceSection]", views)
         self.assertIn(".dictation, .files, .meeting, .history, .settings", views)
