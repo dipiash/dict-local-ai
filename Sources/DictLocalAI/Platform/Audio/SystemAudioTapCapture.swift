@@ -16,6 +16,7 @@ final class SystemAudioTapCapture: @unchecked Sendable {
   private var aggregateID = AudioObjectID(kAudioObjectUnknown)
   private var ioProc: AudioDeviceIOProcID?
   private var outputUID = ""
+  private var outputChanges = AudioOutputObserver()
   private var listeners:
     [(AudioObjectID, AudioObjectPropertyAddress, AudioObjectPropertyListenerBlock)] = []
   private var pendingRebuild: DispatchWorkItem?
@@ -33,6 +34,7 @@ final class SystemAudioTapCapture: @unchecked Sendable {
     try await withCheckedThrowingContinuation { continuation in
       controlQueue.async {
         self.teardown()
+        self.outputChanges = AudioOutputObserver()
         self.origin = origin
         self.running = true
         self.generation &+= 1
@@ -72,6 +74,7 @@ final class SystemAudioTapCapture: @unchecked Sendable {
       AudioHardwareCreateProcessTap(description, &tapID))
 
     outputUID = try currentOutputUID()
+    if let device = currentAudioOutput() { _ = outputChanges.observe(device) }
     let aggregate: [String: Any] = [
       kAudioAggregateDeviceNameKey: "Dict Local AI Audio Tap",
       kAudioAggregateDeviceUIDKey: "app.dictlocalai.tap.\(UUID().uuidString)",
@@ -180,6 +183,9 @@ final class SystemAudioTapCapture: @unchecked Sendable {
 
   private func scheduleRebuild() {
     guard running else { return }
+    if let device = currentAudioOutput(), let change = outputChanges.observe(device) {
+      DiagnosticLog.shared.event("meeting", "output_device_changed", change)
+    }
     pendingRebuild?.cancel()
     let item = DispatchWorkItem { [weak self] in
       guard let self, self.running else { return }
@@ -238,7 +244,7 @@ final class SystemAudioTapCapture: @unchecked Sendable {
     throw AppFailure("audio.the-macos-audio-device-did")
   }
 
-  private func currentOutputUID() throws -> String {
+  private func defaultAudioOutput() throws -> AudioObjectID {
     let system = AudioObjectID(kAudioObjectSystemObject)
     var output = AudioObjectID(kAudioObjectUnknown)
     do {
@@ -249,8 +255,26 @@ final class SystemAudioTapCapture: @unchecked Sendable {
     guard output != kAudioObjectUnknown else {
       throw AppFailure("audio.no-system-audio-output-device")
     }
+    return output
+  }
+
+  // Keep device lookup failures isolated from the capture pipeline.
+  private func currentAudioOutput() -> AudioOutputIdentity? {
+    guard let output = try? defaultAudioOutput(),
+      let uid = try? deviceUID(output)
+    else { return nil }
+    var code: UInt32 = 0
+    _ = try? read(output, kAudioDevicePropertyTransportType, into: &code)
+    return AudioOutputIdentity(transport: .init(code: code), uid: uid)
+  }
+
+  private func currentOutputUID() throws -> String {
+    try deviceUID(try defaultAudioOutput())
+  }
+
+  private func deviceUID(_ device: AudioObjectID) throws -> String {
     var uid: Unmanaged<CFString>?
-    try read(output, kAudioDevicePropertyDeviceUID, into: &uid)
+    try read(device, kAudioDevicePropertyDeviceUID, into: &uid)
     guard let uid else { throw AppFailure("audio.could-not-get-the-audio") }
     return uid.takeRetainedValue() as String
   }
