@@ -183,6 +183,7 @@
 "meeting.start-new-meeting" = "Start New Meeting";
 "meeting.stopping-recording-and-processing-the" = "Stopping recording and processing the remaining audio…";
 "meeting.system-audio" = "System Audio";
+"meeting.system-audio-silent" = "No computer audio for %lld min. If people are talking, check the sound output device.";
 "meeting.text-is-saved-locally-for" = "Text and audio are saved locally for 30 days.";
 "meeting.the-app-received-system-audio" = "✓ The app received system audio during this recording.";
 "meeting.the-audio-timeline-is-out" = "The audio timeline is out of order for channel %@";

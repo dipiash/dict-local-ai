@@ -205,3 +205,16 @@ final class ClipboardPreservationTests: XCTestCase {
     XCTAssertEqual(board.string(forType: .string), "dictated")
   }
 }
+
+final class ConsecutiveSkippedWindowsTests: XCTestCase {
+  func testExclusivelyTheFirstWindowOfASeriesIsReportedAndTheEndGivesTheTotal() {
+    var run = ConsecutiveSkippedWindows()
+    XCTAssertNil(run.end())
+    XCTAssertTrue(run.skip())
+    XCTAssertFalse(run.skip())
+    XCTAssertFalse(run.skip())
+    XCTAssertEqual(run.end(), 3)
+    XCTAssertNil(run.end())
+    XCTAssertTrue(run.skip())
+  }
+}

@@ -25,6 +25,7 @@ final class MeetingRecognitionPipeline: Sendable {
   @RecognitionActor private var diarizer: MeetingNemotronTrack?
   @RecognitionActor private var windows: [StoredWindow] = []
   @RecognitionActor private var slotIDs: [String: String] = [:]
+  @RecognitionActor private var skippedWindows = ConsecutiveSkippedWindows()
   @RecognitionActor private let speakerModels: Nemotron3Models?
   private let singleSpeaker: Bool
   private var channel: String { singleSpeaker ? "microphone" : "system" }
@@ -190,6 +191,11 @@ final class MeetingRecognitionPipeline: Sendable {
     return (result, audit)
   }
 
+  @RecognitionActor private func reportSkippedWindows() {
+    guard let count = skippedWindows.end(), count > 1 else { return }
+    DiagnosticLog.shared.event("asr", "windows_skipped", "reason=digital_silence count=\(count)")
+  }
+
   @RecognitionActor private func drain() async {
     while true {
       var terminalError: Error?
@@ -212,6 +218,7 @@ final class MeetingRecognitionPipeline: Sendable {
         return nil
       }
       guard let (samples, window, offset) = item else {
+        if terminal { reportSkippedWindows() }
         if session.cancelled {
           diarizer = nil
           windows.removeAll()
@@ -244,9 +251,22 @@ final class MeetingRecognitionPipeline: Sendable {
         return
       }
       do {
-        let decoded = try autoreleasepool {
-          try decoder.decodeWithEvidence(
-            samples: samples, window: window, offset: offset, session: session)
+        let decoded: WindowSpeechResult
+        if ZeroSampleAudio.isSilent(samples) {
+          // Keep the window's timestamp when bypassing speech recognition.
+          decoded = WindowSpeechResult(
+            segments: [], tokens: [],
+            start: offset + Double(window.keep.lowerBound) / 16_000,
+            end: offset + Double(window.keep.upperBound) / 16_000)
+          if skippedWindows.skip() {
+            DiagnosticLog.shared.event("asr", "window_skipped", "reason=digital_silence")
+          }
+        } else {
+          reportSkippedWindows()
+          decoded = try autoreleasepool {
+            try decoder.decodeWithEvidence(
+              samples: samples, window: window, offset: offset, session: session)
+          }
         }
         let segments: [TranscriptSegment]
         if singleSpeaker {
@@ -294,5 +314,22 @@ final class MeetingRecognitionPipeline: Sendable {
         }
       }
     }
+  }
+}
+
+// Record the first skipped window and summarize the full run when it ends.
+struct ConsecutiveSkippedWindows {
+  private var count = 0
+
+  /// Returns true for the first window of a series.
+  mutating func skip() -> Bool {
+    count += 1
+    return count == 1
+  }
+
+  /// Returns how many windows the series had, or nil when none was skipped.
+  mutating func end() -> Int? {
+    defer { count = 0 }
+    return count > 0 ? count : nil
   }
 }
