@@ -14,7 +14,7 @@ class LocalUsageLoggingContract(unittest.TestCase):
         self.assertIn('"usage", "navigation"', reporter)
         self.assertIn('"usage", "action"', reporter)
         self.assertIn('"usage", "lifecycle"', reporter)
-        self.assertIn('DiagnosticLogDirectory.resolve(', base)
+        self.assertIn('DiagnosticLogDirectory.activeDirectory(', base)
         self.assertIn('session-', base)
 
     def test_navigation_entry_points_have_sources(self):

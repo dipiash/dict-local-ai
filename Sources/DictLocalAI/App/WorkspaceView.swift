@@ -559,6 +559,15 @@ struct WorkspaceView: View {
           .font(AppStyle.caption).foregroundStyle(.secondary)
         AudioStorageControls(history: controller.history)
       }
+      SettingsSection(L10n.text("settings.logs")) {
+        Button(L10n.text("settings.open-logs")) {
+          UsageTelemetry.action(.settings, .openLogs)
+          NSWorkspace.shared.open(DiagnosticLogDirectory.activeDirectory())
+        }
+        .accessibilityIdentifier("settings-open-logs")
+        Text(L10n.text("settings.open-logs-hint"))
+          .font(AppStyle.caption).foregroundStyle(.secondary)
+      }
     }
   }
 
