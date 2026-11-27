@@ -67,7 +67,7 @@
 "export.source" = "Source: %@";
 "export.status" = "Processed: %@";
 "export.supported-formats-txt-and-json" = "Supported formats: TXT and JSON.";
-"export.timestamp-note" = "Timestamps are approximate, based on speech recognition, and start at the beginning of the session.";
+"export.timestamp-note" = "Timestamps start at the beginning of the session and come from speech recognition. Accuracy is about ±0.3 s.";
 "files.canceled-you-can-save-the" = "Canceled. You can save the part already processed.";
 "files.canceling" = "Canceling…";
 "files.check-for-possible-speaker-merges" = "Check for possible speaker merges and splits";
@@ -110,7 +110,7 @@
 "files.there-are-no-complete-segments" = "There are no complete segments to update safely. Check the timestamps and assign the speaker manually.";
 "files.these-are-suggestions-listen-to" = "These are suggestions. Listen to the recording and fix speaker labels where needed.";
 "files.this-updates-only-the-complete" = "This updates only the complete segments in this episode. Other segments with these IDs stay as they are.";
-"files.timestamps-are-approximate-and-start" = "Timestamps are approximate and start at the beginning of the file. You can edit speaker names. When history is on, text and audio are kept locally for 30 days.";
+"files.timestamps-are-approximate-and-start" = "Timestamps start at the beginning of the file. Accuracy is about ±0.3 s. You can edit speaker names. When history is on, text and audio are kept locally for 30 days.";
 "files.turn-audio-files-into-text" = "Turn audio files into text.";
 "files.up-to-3-hours-on" = "Up to 3 hours · on device · one file at a time";
 "history.all" = "All";
