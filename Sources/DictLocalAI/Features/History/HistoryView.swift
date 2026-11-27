@@ -11,6 +11,7 @@ struct HistoryView: View {
   @State private var confirmClear = false
   @State private var notice = ""
   @State private var pendingChange: PendingHistoryChange?
+  @State private var keyboardMonitor = HistoryKeyboardMonitor()
 
   private enum PendingHistoryChange {
     case selection(UUID?)
@@ -229,8 +230,18 @@ struct HistoryView: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .onAppear {
       store.reload()
+      keyboardMonitor.start(
+        playing: { store.draftID.map(store.audio.isPlaying) ?? false },
+        jump: { delta in
+          guard let id = store.draftID, let document = store.draftDocument else { return }
+          let target = store.audio.position + delta
+          do { try store.audio.seek(id: id, audioFile: document.audioFile, to: target) } catch {
+            notice = L10n.text("history.could-not-play", L10n.error(error))
+          }
+        })
     }
     .onDisappear {
+      keyboardMonitor.stop()
       store.audio.stop(reason: .viewClosed)
     }
     .onChange(of: store.draftID) { _, _ in store.audio.stop(reason: .switched) }

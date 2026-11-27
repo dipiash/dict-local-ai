@@ -366,4 +366,56 @@ final class HistoryPlaybackControllerTests: XCTestCase {
     XCTAssertNil(gate.editingChanged(true))
     XCTAssertNil(gate.editingChanged(false))
   }
+
+  func testPanelOwnsArrowsWhenSoundIsPlayingAndFocusIsNotATextFieldOrAList() {
+    XCTAssertTrue(HistoryKeyboardPolicy.shouldSeekWithArrows(focus: .nothing, playing: true))
+    XCTAssertTrue(HistoryKeyboardPolicy.shouldSeekWithArrows(focus: .control, playing: true))
+    XCTAssertFalse(HistoryKeyboardPolicy.shouldSeekWithArrows(focus: .textInput, playing: true))
+    XCTAssertFalse(HistoryKeyboardPolicy.shouldSeekWithArrows(focus: .list, playing: true))
+    XCTAssertFalse(HistoryKeyboardPolicy.shouldSeekWithArrows(focus: .nothing, playing: false))
+    XCTAssertFalse(HistoryKeyboardPolicy.shouldSeekWithArrows(focus: .control, playing: false))
+  }
+
+  @MainActor
+  func testClickLogDescribesFocusAndViewWithoutTranscript() {
+    let detail = HistoryKeyboardPolicy.describeHistoryClick(
+      focus: .textInput, hit: NSSlider(), released: true)
+    XCTAssertEqual(detail, "focus=textInput hit=NSSlider released=true")
+    XCTAssertEqual(
+      HistoryKeyboardPolicy.describeHistoryClick(focus: .nothing, hit: nil, released: false),
+      "focus=nothing hit=nil released=false")
+  }
+
+  @MainActor
+  func testKeyboardFocusDistinguishesEditorsListsAndOtherControls() {
+    let window = NSWindow(
+      contentRect: .init(x: 0, y: 0, width: 100, height: 100), styleMask: [.titled],
+      backing: .buffered, defer: true)
+    let content = NSView()
+    window.contentView = content
+    let table = NSTableView()
+    let cell = NSView()
+    table.addSubview(cell)
+    content.addSubview(table)
+    let button = NSButton()
+    content.addSubview(button)
+    XCTAssertEqual(HistoryKeyboardPolicy.focusTarget(of: nil, in: window), .nothing)
+    XCTAssertEqual(HistoryKeyboardPolicy.focusTarget(of: content, in: window), .nothing)
+    XCTAssertEqual(HistoryKeyboardPolicy.focusTarget(of: NSTextView(), in: window), .textInput)
+    XCTAssertEqual(HistoryKeyboardPolicy.focusTarget(of: table, in: window), .list)
+    XCTAssertEqual(HistoryKeyboardPolicy.focusTarget(of: cell, in: window), .list)
+    XCTAssertEqual(HistoryKeyboardPolicy.focusTarget(of: NSOutlineView(), in: window), .list)
+    XCTAssertEqual(HistoryKeyboardPolicy.focusTarget(of: button, in: window), .control)
+  }
+
+  func testClickingOutsideEditorClearsFocus() {
+    XCTAssertTrue(
+      HistoryKeyboardPolicy.shouldClearTextFocus(focus: .textInput, clickInTextInput: false))
+    XCTAssertFalse(
+      HistoryKeyboardPolicy.shouldClearTextFocus(focus: .textInput, clickInTextInput: true))
+    XCTAssertFalse(
+      HistoryKeyboardPolicy.shouldClearTextFocus(focus: .control, clickInTextInput: false))
+    XCTAssertFalse(
+      HistoryKeyboardPolicy.shouldClearTextFocus(focus: .nothing, clickInTextInput: false))
+  }
 }
