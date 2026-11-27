@@ -17,6 +17,24 @@ final class Preferences: ObservableObject {
       }
     }
   }
+  @Published var saveAudio: Bool {
+    didSet {
+      storage.saveAudio = saveAudio
+      if oldValue != saveAudio {
+        UsageTelemetry.action(.settings, .toggleHistoryPlayback, value: saveAudio)
+      }
+    }
+  }
+  /// Saving audio requires both History and audio retention to be enabled.
+  var keepsAudio: Bool { saveHistory && saveAudio }
+  @Published var restoreClipboard: Bool {
+    didSet {
+      storage.restoreClipboard = restoreClipboard
+      if oldValue != restoreClipboard {
+        UsageTelemetry.action(.settings, .toggleClipboardRestore, value: restoreClipboard)
+      }
+    }
+  }
   @Published var microphone: String {
     didSet {
       storage.microphone = microphone
@@ -45,6 +63,8 @@ final class Preferences: ObservableObject {
     self.storage = storage
     enabled = storage.enabled
     saveHistory = storage.saveHistory
+    saveAudio = storage.saveAudio
+    restoreClipboard = storage.restoreClipboard
     microphone = storage.microphone
     hold = storage.hold
     toggle = storage.toggle

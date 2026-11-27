@@ -338,6 +338,10 @@
 "settings.recording-source" = "Recording Source";
 "settings.refresh-list" = "Refresh List";
 "settings.reset-to-left-option-fn" = "Reset to Left Option + Fn and Fn + Space";
+"settings.restore-clipboard" = "Restore the previous clipboard after dictation";
+"settings.restore-clipboard-hint" = "After the text is pasted, the app puts back what you had copied before. Turn it off to leave the dictated text on the clipboard.";
+"settings.save-audio" = "Save audio";
+"settings.save-audio-hint" = "Audio of new recordings is kept on this Mac for 30 days with the text. Turn it off to keep text only: audio already saved stays until its 30 days end. A change during a meeting applies from the next recording.";
 "settings.save-and-continue" = "Save and Continue";
 "settings.save-changes-to-history-before" = "Save Changes to History Before Leaving?";
 "settings.set-your-general-preferences" = "Set your general preferences.";

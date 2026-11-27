@@ -319,7 +319,7 @@ final class DictationSession: ObservableObject {
         var savedAudio: HistoryAudioFile?
         if completion != nil {
           savedAudio = HistoryAudioFile.save(
-            self.audio.copy(from: 0), enabled: self.preferences.saveHistory)
+            self.audio.copy(from: 0), enabled: self.preferences.keepsAudio)
           completion?.audioFile = savedAudio?.name
           self.latestRecordedAudio = savedAudio
         }
@@ -341,7 +341,8 @@ final class DictationSession: ObservableObject {
           insert: { text in
             self.allowInsertion
               ? TextInsertion.insert(
-                text, target: self.completionTarget) : .unavailable
+                text, target: self.completionTarget,
+                restoreClipboard: self.preferences.restoreClipboard) : .unavailable
           },
           insertInEditor: { text in
             self.allowInsertion && self.internalEditorWasTarget && self.internalEditorFocused
@@ -364,7 +365,7 @@ final class DictationSession: ObservableObject {
         }
         DiagnosticLog.shared.event(
           "dictation", "completed",
-          "chars=\(completion.text.count) insertion=\(outcome) completion_target=\(self.completionTarget == nil ? "none" : "present") audio=\(self.preferences.saveHistory ? "saved" : "off")"
+          "chars=\(completion.text.count) insertion=\(outcome) completion_target=\(self.completionTarget == nil ? "none" : "present") audio=\(self.preferences.keepsAudio ? "saved" : "off")"
         )
         switch outcome {
         case .inserted:

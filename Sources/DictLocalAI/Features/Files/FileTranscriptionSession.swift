@@ -158,10 +158,10 @@ final class FileTranscriptionSession: ObservableObject {
     var wasCancelled = false
     if case .cancelled = completion { wasCancelled = true }
     let audio =
-      preferences.saveHistory && transcript?.segments.isEmpty == false
+      preferences.keepsAudio && transcript?.segments.isEmpty == false
       ? lastFileURL.flatMap { url in
         HistoryAudioFile.copy(
-          from: url, enabled: preferences.saveHistory,
+          from: url, enabled: preferences.keepsAudio,
           limitSeconds: wasCancelled ? transcript?.processedUntil : nil,
           onUnreadable: { [weak self] name in
             MainActor.assumeIsolated {
