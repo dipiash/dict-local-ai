@@ -183,6 +183,7 @@
 "meeting.start-new-meeting" = "Начать новую встречу";
 "meeting.stopping-recording-and-processing-the" = "Останавливаем запись и обрабатываем остаток…";
 "meeting.system-audio" = "Звук компьютера";
+"meeting.system-audio-silent" = "Звука компьютера нет уже %lld мин. Если собеседники говорят, проверьте устройство вывода звука.";
 "meeting.text-is-saved-locally-for" = "Текст и аудио автоматически сохраняются локально на 30 дней.";
 "meeting.the-app-received-system-audio" = "✓ Ненулевой системный звук поступал в этой записи.";
 "meeting.the-audio-timeline-is-out" = "Нарушена временная шкала записи аудиоканала %@";

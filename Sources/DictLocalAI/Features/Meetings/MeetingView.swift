@@ -65,6 +65,10 @@ struct MeetingView: View {
               .font(AppStyle.caption)
               .foregroundStyle(controller.systemAudioDetected ? .green : .secondary)
             }
+            if controller.running, let minutes = controller.systemAudioSilenceMinutes {
+              WorkspaceStatusBanner(
+                message: L10n.text("meeting.system-audio-silent", minutes), kind: .warning)
+            }
             Text(controller.message).font(AppStyle.body)
             if !controller.saveError.isEmpty { Text(controller.saveError).foregroundStyle(.red) }
             Text(

@@ -2,6 +2,7 @@ import AppKit
 import Combine
 import DictApplication
 import DictCore
+import Synchronization
 import UniformTypeIdentifiers
 
 @MainActor
@@ -13,6 +14,7 @@ final class MeetingSession: ObservableObject {
   @Published private(set) var message = L10n.text("meeting.record-a-meeting-of-up")
   @Published private(set) var elapsed = 0
   @Published private(set) var systemAudioDetected = false
+  @Published private(set) var systemAudioSilenceMinutes: Int?
   @Published private(set) var progress: Double?
   @Published private(set) var saveError = ""
   @Published private(set) var savedMeetings: [SavedMeeting] = []
@@ -26,6 +28,7 @@ final class MeetingSession: ObservableObject {
   private let preferences: Preferences
   private var capture: (any MeetingCapturing)?
   private var audio: HistoryAudioFile?
+  private let silence = Mutex(SilentAudioMonitor())
   private var pipeline: (any MeetingRecognizingPipeline)?
   private var preparation: Task<Void, Never>?
   private var generation = UUID()
@@ -85,6 +88,7 @@ final class MeetingSession: ObservableObject {
     }
     DiagnosticLog.shared.event(
       "meeting", "start", "source=system audio=\(preferences.saveHistory ? "saved" : "off")")
+    silence.withLock { $0 = SilentAudioMonitor() }
     generation = UUID()
     let id = generation
     state = .preparing
@@ -92,6 +96,7 @@ final class MeetingSession: ObservableObject {
     saveError = ""
     elapsed = 0
     systemAudioDetected = false
+    systemAudioSilenceMinutes = nil
     transcript = nil
     audit = nil
     selectedMeeting = nil
@@ -125,9 +130,11 @@ final class MeetingSession: ObservableObject {
         // Capture the retention preference once so changes apply to the next recording.
         let audio = HistoryAudioFile.make(kind: .meeting, enabled: preferences.saveHistory)
         self.audio = audio
-        capture.onSamples = { samples, time in
+        capture.onSamples = { [weak self] samples, time in
           _ = pipeline.append(samples: samples, at: time)
           audio?.write(samples, at: time)
+          guard let event = self?.silence.withLock({ $0.append(samples, at: time) }) else { return }
+          Task { @MainActor in self?.apply(silence: event, id: id) }
         }
         capture.onSystemAudioDetected = { [weak self] in
           guard let self, self.generation == id else { return }
@@ -161,6 +168,22 @@ final class MeetingSession: ObservableObject {
         guard generation == id else { return }
         stop(error is CancellationError ? .setupCancelled : .recognition(error))
       }
+    }
+  }
+  private func apply(silence event: SilentAudioMonitor.Event, id: UUID) {
+    guard generation == id, state == .recording else { return }
+    switch event {
+    case .warningRaised(let seconds):
+      DiagnosticLog.shared.event(
+        "meeting", "system_audio_silent",
+        "seconds=\(seconds) audio_seen=\(systemAudioDetected)")
+      // Allow initial digital silence while the call is getting started.
+      if systemAudioDetected { systemAudioSilenceMinutes = seconds / 60 }
+    case .warningProgress(let seconds):
+      if systemAudioDetected { systemAudioSilenceMinutes = seconds / 60 }
+    case .resumed(let seconds):
+      DiagnosticLog.shared.event("meeting", "system_audio_resumed", "silent_seconds=\(seconds)")
+      systemAudioSilenceMinutes = nil
     }
   }
   private func startTimer() {
@@ -235,6 +258,7 @@ final class MeetingSession: ObservableObject {
   private func finished(reason: MeetingWorkflow.StopReason) {
     pipeline = nil
     preparation = nil
+    systemAudioSilenceMinutes = nil
     var audioOutcome = audio == nil ? "off" : "kept"
     if !recordExists() {
       audio?.discard()
@@ -247,7 +271,7 @@ final class MeetingSession: ObservableObject {
     audio = nil
     DiagnosticLog.shared.event(
       "meeting", "finished",
-      "segments=\(transcript?.segments.count ?? 0) audio=\(audioOutcome)"
+      "segments=\(transcript?.segments.count ?? 0) audio=\(audioOutcome) silent_at_stop_seconds=\(silence.withLock { $0.ongoingSilenceSeconds })"
     )
     workflow.finalize(&transcript, elapsed: elapsed, reason: reason)
     if selectedMeeting != nil && saveError.isEmpty { unsaved = false }
