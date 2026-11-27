@@ -96,6 +96,9 @@ final class Hotkeys {
       if let tap { CGEvent.tapEnable(tap: tap, enable: true) }
       return false
     }
+    guard event.getIntegerValueField(.eventSourceUserData) != TextInsertion.appEventTag else {
+      return false
+    }
     guard enabled, !capturing else { return false }
     var key = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
     if key == 53, type == .keyDown, isBusy() || pending != nil || pendingToggle != nil {

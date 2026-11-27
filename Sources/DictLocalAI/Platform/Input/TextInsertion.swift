@@ -10,6 +10,11 @@ struct InsertionTarget {
 
 @MainActor
 enum TextInsertion {
+  nonisolated static let appEventTag: Int64 = 0x444C_4149
+  // Target apps read the clipboard some time after Cmd+V; 0.8 s covers slow Electron apps.
+  private static let clipboardRestorer = ClipboardPreserver(
+    board: .general, delay: .milliseconds(800))
+
   private static func attribute(_ element: AXUIElement, _ key: String) -> CFTypeRef? {
     var value: CFTypeRef?
     guard AXUIElementCopyAttributeValue(element, key as CFString, &value) == .success else {
@@ -116,8 +121,10 @@ enum TextInsertion {
       down.keyboardSetUnicodeString(stringLength: buffer.count, unicodeString: buffer.baseAddress)
       up.keyboardSetUnicodeString(stringLength: buffer.count, unicodeString: buffer.baseAddress)
     }
-    down.post(tap: .cghidEventTap)
-    up.post(tap: .cghidEventTap)
+    for event in [down, up] {
+      event.setIntegerValueField(.eventSourceUserData, value: appEventTag)
+      event.post(tap: .cghidEventTap)
+    }
     DiagnosticLog.shared.event("insertion", "unicode_posted_unconfirmed", "chars=\(text.count)")
     return true
   }
@@ -137,10 +144,16 @@ enum TextInsertion {
     vUp.flags = .maskCommand
     commandUp.type = .flagsChanged
     commandUp.flags = []
-    return [commandDown, vDown, vUp, commandUp]
+    let events = [commandDown, vDown, vUp, commandUp]
+    for event in events {
+      event.setIntegerValueField(.eventSourceUserData, value: appEventTag)
+    }
+    return events
   }
 
-  static func insert(_ text: String, target: InsertionTarget?) -> TextInsertionOutcome {
+  static func insert(
+    _ text: String, target: InsertionTarget?, restoreClipboard: Bool = true
+  ) -> TextInsertionOutcome {
     guard let target else {
       DiagnosticLog.shared.event("insertion", "delivery_unavailable", "reason=no_completion_target")
       return .unavailable
@@ -155,6 +168,7 @@ enum TextInsertion {
       return .inserted
     }
 
+    let previousClipboard = clipboardRestorer.prepare(enabled: restoreClipboard)
     guard copy(text) else {
       DiagnosticLog.shared.event("insertion", "delivery_unavailable", "reason=clipboard_write")
       return .unavailable
@@ -169,11 +183,14 @@ enum TextInsertion {
       return .unavailable
     }
     guard let events = pasteKeyEvents() else {
-      return postShortUnicode(text, target: target) ? .pasteRequested : .unavailable
+      guard postShortUnicode(text, target: target) else { return .unavailable }
+      clipboardRestorer.restoreAfterPaste(previousClipboard, pasteChangeCount: copiedChange)
+      return .pasteRequested
     }
     // Chromium needs separate Command key events to receive this paste.
     for event in events { event.post(tap: .cghidEventTap) }
     DiagnosticLog.shared.event("insertion", "paste_posted_unconfirmed", "pid=\(target.pid)")
+    clipboardRestorer.restoreAfterPaste(previousClipboard, pasteChangeCount: copiedChange)
     return .pasteRequested
   }
 }
