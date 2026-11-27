@@ -435,15 +435,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, NSWind
     content.layoutSubtreeIfNeeded()
     let size = content.fittingSize
     guard size.width > 0, size.height > 0 else { return }
-    panel.setContentSize(size)
-    panel.setFrame(panel.frame, display: true)
+    let frameSize = panel.frameRect(forContentRect: NSRect(origin: .zero, size: size)).size
+    let visible = (panel.screen ?? NSScreen.main)?.visibleFrame
+    let frame =
+      visible.map { PanelPlacement.resized(panel.frame, to: frameSize, within: $0) }
+      ?? NSRect(origin: panel.frame.origin, size: frameSize)
+    panel.setFrame(frame, display: true)
   }
   private func showPanel() {
+    // Keep the user's window placement while the panel is visible.
+    let wasVisible = panel.isVisible
     fitPanelToContent()
-    let screen = screenForFrontmostWindow() ?? NSScreen.main ?? NSScreen.screens.first
-    guard let screen else { return }
-    let visible = screen.visibleFrame
-    panel.setFrameOrigin(NSPoint(x: visible.midX - panel.frame.width / 2, y: visible.minY + 24))
+    if !wasVisible {
+      let screen = screenForFrontmostWindow() ?? NSScreen.main ?? NSScreen.screens.first
+      guard let screen else { return }
+      panel.setFrame(
+        PanelPlacement.shown(
+          panel.frame, isVisible: false, within: screen.visibleFrame), display: true)
+    }
     panel.orderFrontRegardless()
   }
   private func screenForFrontmostWindow() -> NSScreen? {
