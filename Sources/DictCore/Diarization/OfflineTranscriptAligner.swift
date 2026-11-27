@@ -6,6 +6,8 @@ public struct OfflineTranscriptAligner: Sendable {
     public var sentenceBreakAfterWords = 36
     public var silenceBreakSeconds = 2.0
     public var boundaryToleranceSeconds = 0.12
+    // Retain speaker slots so names assigned during a meeting stay attached.
+    public var renumberSpeakers = true
     public init() {}
   }
 
@@ -79,7 +81,9 @@ public struct OfflineTranscriptAligner: Sendable {
       guard !text.isEmpty else { return }
       let rawID = words[groupStart].speaker
       let id: String?
-      if let rawID {
+      if let rawID, !settings.renumberSpeakers {
+        id = rawID
+      } else if let rawID {
         if speakerNumbers[rawID] == nil {
           speakerNumbers[rawID] = String(speakerNumbers.count + 1)
         }

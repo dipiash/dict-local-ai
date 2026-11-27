@@ -136,56 +136,46 @@ final class MeetingRecognitionPipeline: Sendable {
     if diarizer != nil {
       DiagnosticLog.shared.event("nemotron3-meeting", "final_flush", "track=\(channel)")
     }
-    let result = windows.flatMap { attribute($0) }.sorted { $0.start < $1.start }
-    let labeledCount = result.reduce(into: 0) { count, segment in
-      if segment.speakerID != nil { count += 1 }
-    }
-    var speakerIDs: Set<String> = []
-    for segment in result {
-      if let id = segment.speakerID { speakerIDs.insert(id) }
-    }
-    let summary =
-      "windows=\(windows.count) segments=\(result.count)"
-      + " labeled=\(labeledCount)"
-      + " unknown=\(result.count - labeledCount)"
-      + " distinctSpeakers=\(speakerIDs.count)"
-    DiagnosticLog.shared.event("nemotron3-meeting", "final_alignment", summary)
-    let turns = stableTurns(diarizer?.allTurns() ?? []).sorted { $0.start < $1.start }
-    let words: [DiarizationAudit.Word] = windows.flatMap { window in
-      let rawTurns = diarizer?.turns(in: window.start..<window.end) ?? []
-      let turns = stableTurns(rawTurns)
-      return window.tokens.enumerated().map { index, token in
-        let next =
-          index + 1 < window.tokens.count
-          ? window.tokens[index + 1].time : window.end
-        let end = max(token.time, min(window.end, next))
-        let candidates = Set(
-          turns.filter {
-            $0.start <= token.time && token.time < $0.end
-          }.map(\.id))
-        let speaker = candidates.count == 1 ? candidates.first : nil
-        let rawCandidates = Set(
-          rawTurns.filter {
-            $0.start <= token.time && token.time < $0.end
-          }.map(\.id))
-        let rawSpeaker =
-          rawCandidates.count == 1
-          ? "\(channel):\(rawCandidates.first!)" : nil
-        let support =
-          speaker.flatMap { id in turns.first(where: { $0.id == id }) }
-          .map { max(0, min($0.end, end) - max($0.start, token.time)) } ?? 0
-        let confidence = min(1, support / max(0.01, end - token.time))
-        return DiarizationAudit.Word(
-          text: token.piece, start: token.time, end: end,
-          rawSpeaker: rawSpeaker, assignedSpeaker: speaker,
-          supportSeconds: support, confidence: confidence,
-          reason: speaker == nil
-            ? (candidates.isEmpty ? "no_turn" : "ambiguous_overlap") : "matched")
-      }
-    }
+    let rawTurns = diarizer?.allTurns() ?? []
+    let turns = stableTurns(rawTurns).sorted { $0.start < $1.start }
+    let tokens = windows.flatMap(\.tokens).sorted { $0.time < $1.time }
     let duration = max(
       windows.map(\.end).max() ?? 0,
       turns.map(\.end).max() ?? 0)
+    var settings = OfflineTranscriptAligner.Settings()
+    settings.renumberSpeakers = false
+    let aligned = OfflineTranscriptAligner(settings: settings).detailedAlignment(
+      tokens: tokens, turns: turns, duration: duration)
+    let result = aligned.segments.map {
+      TranscriptSegment(
+        start: $0.start, end: $0.end, text: $0.text, speakerID: $0.speakerID, channel: channel)
+    }
+    // Align stable speaker slots while retaining the onset's raw channel and speaker ID for audit.
+    let words = aligned.words.map { word in
+      let raw = Set(
+        rawTurns.filter { $0.start <= word.start && word.start < $0.end }.map(\.id))
+      return DiarizationAudit.Word(
+        text: word.text, start: word.start, end: word.end,
+        rawSpeaker: raw.count == 1 ? "\(channel):\(raw.first!)" : nil,
+        assignedSpeaker: word.assignedSpeaker, supportSeconds: word.supportSeconds,
+        confidence: word.confidence, reason: word.reason)
+    }
+    let unknown = words.filter { $0.assignedSpeaker == nil }.count
+    // Count assignments from the onset-based rule for comparison on actual meetings.
+    let unknownByStart = words.filter { word in
+      Set(turns.filter { $0.start <= word.start && word.start < $0.end }.map(\.id)).count != 1
+    }.count
+    var reasons: [String: Int] = [:]
+    for word in words where word.reason != "matched" { reasons[word.reason, default: 0] += 1 }
+    let speakerIDs = Set(result.compactMap(\.speakerID))
+    DiagnosticLog.shared.event(
+      "nemotron3-meeting", "final_alignment",
+      "windows=\(windows.count) segments=\(result.count)"
+        + " labeled=\(result.filter { $0.speakerID != nil }.count)"
+        + " unknown=\(result.filter { $0.speakerID == nil }.count)"
+        + " distinctSpeakers=\(speakerIDs.count)"
+        + " words=\(words.count) unknown_words=\(unknown) unknown_words_by_start=\(unknownByStart)"
+        + " reasons=\(reasons.sorted { $0.key < $1.key })")
     let audit = DiarizationAudit(
       source: L10n.text("history.meeting"), duration: duration, method: "nemotron3-fast32",
       words: words, rawTurns: turns,
