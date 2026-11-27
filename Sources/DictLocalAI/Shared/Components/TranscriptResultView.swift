@@ -9,6 +9,7 @@ struct TranscriptResultView: View {
   var editText: ((Int, String) -> Void)?
   var assignSpeaker: ((Int, String?) -> Void)?
   var addSpeaker: ((Int) -> Void)?
+  var playFromTimestamp: ((Double) -> Void)?
   var body: some View {
     VStack(alignment: .leading) {
       if editable && !transcript.speakerIDs.isEmpty {
@@ -41,16 +42,30 @@ struct TranscriptResultView: View {
           ForEach(transcript.segments.indices, id: \.self) { index in
             let segment = transcript.segments[index]
             VStack(alignment: .leading, spacing: DesignTokens.Spacing.xxs) {
-              Text(
-                "\(FileTranscript.segmentTime(segment.start))–\(FileTranscript.segmentTime(segment.end))"
-                  + (transcript.speakerRecognitionEnabled == false
-                    ? "" : " · \(transcript.speakerTitle(segment.speakerID))")
-                  + (segment.channel.map {
-                    $0 == "microphone"
-                      ? L10n.text("transcript.microphone") : L10n.text("transcript.system-audio")
-                  } ?? "")
-              )
-              .font(AppStyle.caption).foregroundStyle(.secondary)
+              HStack(spacing: DesignTokens.Spacing.xs) {
+                Text(
+                  "\(FileTranscript.segmentTime(segment.start))–\(FileTranscript.segmentTime(segment.end))"
+                    + (transcript.speakerRecognitionEnabled == false
+                      ? "" : " · \(transcript.speakerTitle(segment.speakerID))")
+                    + (segment.channel.map {
+                      $0 == "microphone"
+                        ? L10n.text("transcript.microphone") : L10n.text("transcript.system-audio")
+                    } ?? "")
+                )
+                .font(AppStyle.caption).foregroundStyle(.secondary)
+                if let playFromTimestamp {
+                  Button {
+                    playFromTimestamp(segment.start)
+                  } label: {
+                    Image(systemName: "play.fill")
+                  }
+                  .buttonStyle(.borderless)
+                  .font(AppStyle.caption)
+                  .help(L10n.text("history.listen-from-here"))
+                  .accessibilityLabel(L10n.text("history.listen-from-here"))
+                  .accessibilityIdentifier("history-segment-play-\(index)")
+                }
+              }
               if editable, transcript.speakerRecognitionEnabled != false,
                 let assignSpeaker, let addSpeaker
               {
