@@ -197,6 +197,13 @@ struct HistoryView: View {
                       : {
                         index, text in
                         store.editDraftSegment(index, text: text)
+                      },
+                    playFromTimestamp: store.audio.fileURL(audioFile: document.audioFile) == nil
+                      ? nil
+                      : { start in
+                        if let id = store.draftID {
+                          playHistoryAudio(id: id, audioFile: document.audioFile, from: start)
+                        }
                       }
                   )
 
@@ -371,6 +378,12 @@ struct HistoryView: View {
 
   private func toggleHistoryPlayback(id: UUID, audioFile: String?) {
     do { try store.audio.toggle(id: id, audioFile: audioFile) } catch {
+      notice = L10n.text("history.could-not-play", L10n.error(error))
+    }
+  }
+
+  private func playHistoryAudio(id: UUID, audioFile: String?, from time: Double) {
+    do { try store.audio.play(id: id, audioFile: audioFile, from: time) } catch {
       notice = L10n.text("history.could-not-play", L10n.error(error))
     }
   }
