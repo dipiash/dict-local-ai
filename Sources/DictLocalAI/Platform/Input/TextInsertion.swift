@@ -10,7 +10,6 @@ struct InsertionTarget {
 
 @MainActor
 enum TextInsertion {
-  nonisolated static let appEventTag: Int64 = 0x444C_4149
   // Target apps read the clipboard some time after Cmd+V; 0.8 s covers slow Electron apps.
   private static let clipboardRestorer = ClipboardPreserver(
     board: .general, delay: .milliseconds(800))
@@ -122,7 +121,7 @@ enum TextInsertion {
       up.keyboardSetUnicodeString(stringLength: buffer.count, unicodeString: buffer.baseAddress)
     }
     for event in [down, up] {
-      event.setIntegerValueField(.eventSourceUserData, value: appEventTag)
+      event.setIntegerValueField(.eventSourceUserData, value: ShortcutEvent.appEventTag)
       event.post(tap: .cghidEventTap)
     }
     DiagnosticLog.shared.event("insertion", "unicode_posted_unconfirmed", "chars=\(text.count)")
@@ -146,7 +145,7 @@ enum TextInsertion {
     commandUp.flags = []
     let events = [commandDown, vDown, vUp, commandUp]
     for event in events {
-      event.setIntegerValueField(.eventSourceUserData, value: appEventTag)
+      event.setIntegerValueField(.eventSourceUserData, value: ShortcutEvent.appEventTag)
     }
     return events
   }

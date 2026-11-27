@@ -20,7 +20,9 @@ final class DictationSession: ObservableObject {
   private var preparingMicrophone = false
   private var audioRequestID = UUID()
   private var latestRecordedAudio: HistoryAudioFile?
-  @Published private(set) var phase = DictationPhase.idle
+  @Published private(set) var phase = DictationPhase.idle {
+    didSet { hotkeys.updateShortcutAvailability() }
+  }
   @Published private(set) var message = ""
   @Published private(set) var text = ""
   @Published var scratchpad = ""
