@@ -42,7 +42,7 @@
 "dictation.keyboard-input-was-interrupted-recording" = "Приём клавиш прерван. Запись остановлена.";
 "dictation.listening" = "Слушаю…";
 "dictation.no-speech-detected" = "Речь не обнаружена.";
-"dictation.paste-requested-check-the-target" = "Команда вставки отправлена. Проверьте поле; текст остаётся в буфере обмена и в меню приложения.";
+"dictation.paste-requested-check-the-target" = "Команда вставки отправлена. Проверьте поле; текст доступен в меню приложения.";
 "dictation.preparing-to-record" = "Подготавливаем запись…";
 "dictation.process-again" = "Повторить обработку";
 "dictation.recognition-failed" = "Не удалось распознать: %@";

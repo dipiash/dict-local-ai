@@ -42,7 +42,7 @@
 "dictation.keyboard-input-was-interrupted-recording" = "Keyboard input was interrupted. Recording stopped.";
 "dictation.listening" = "Listening…";
 "dictation.no-speech-detected" = "No speech detected.";
-"dictation.paste-requested-check-the-target" = "Paste requested. Check the target field. The text remains on the clipboard and in the app menu.";
+"dictation.paste-requested-check-the-target" = "Paste requested. Check the target field. The text is available in the app menu.";
 "dictation.preparing-to-record" = "Preparing to record…";
 "dictation.process-again" = "Process Again";
 "dictation.recognition-failed" = "Recognition failed: %@";

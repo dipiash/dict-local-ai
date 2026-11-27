@@ -30,7 +30,7 @@ class CrossAppInsertionContractTests(unittest.TestCase):
 
     def test_no_blind_double_delivery(self):
         self.assertIn("private static func postShortUnicode", self.insertion)
-        self.assertIn("return postShortUnicode(text, target: target)", self.insertion)
+        self.assertIn("guard postShortUnicode(text, target: target) else { return .unavailable }", self.insertion)
         self.assertIn("paste_posted_unconfirmed", self.insertion)
         self.assertNotIn(".postToPid", self.insertion)
 
