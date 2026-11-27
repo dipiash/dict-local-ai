@@ -80,4 +80,36 @@ final class OfflineTranscriptAlignerTests: XCTestCase {
       ], duration: 5)
     XCTAssertEqual(result.map(\.speakerID), ["1", "2", "1"])
   }
+
+  private var meetingAligner: OfflineTranscriptAligner {
+    var settings = OfflineTranscriptAligner.Settings()
+    settings.renumberSpeakers = false
+    return OfflineTranscriptAligner(settings: settings)
+  }
+
+  func testMeetingModePreservesSlotIDs() {
+    let result = meetingAligner.align(
+      tokens: [.init(time: 0.2, piece: " One."), .init(time: 2.2, piece: " Two.")],
+      turns: [.init(id: "3", start: 0, end: 1), .init(id: "1", start: 2, end: 3)],
+      duration: 4)
+    XCTAssertEqual(result.map(\.speakerID), ["3", "1"])
+  }
+
+  func testTokenJustBeforeATurnGetsItsSpeaker() {
+    // No speaker interval covers the word onset at 0.95 s.
+    let output = meetingAligner.detailedAlignment(
+      tokens: [.init(time: 0.95, piece: " Hello"), .init(time: 1.3, piece: " there.")],
+      turns: [.init(id: "2", start: 1.0, end: 2.0)], duration: 3)
+    XCTAssertEqual(output.words.map(\.assignedSpeaker), ["2", "2"])
+    XCTAssertEqual(output.segments.map(\.speakerID), ["2"])
+  }
+
+  func testEqualOverlapLeavesSpeakerUnknown() {
+    let output = meetingAligner.detailedAlignment(
+      tokens: [.init(time: 1.0, piece: " Both")],
+      turns: [.init(id: "1", start: 0, end: 3), .init(id: "2", start: 0, end: 3)],
+      duration: 3)
+    XCTAssertNil(output.words.first?.assignedSpeaker)
+    XCTAssertEqual(output.words.first?.reason, "ambiguous_overlap")
+  }
 }
