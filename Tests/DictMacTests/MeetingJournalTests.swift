@@ -87,10 +87,10 @@ final class MeetingJournalTests: XCTestCase {
     }
   }
 
-  func testEditsDoNotExtendSevenDayRetention() throws {
+  func testEditingRecordLeavesExpirationUnchanged() throws {
     try withFolder { folder in
       var document = FileTranscript(source: "Старая встреча", duration: 1)
-      document.startedAt = Date().addingTimeInterval(-8 * 86400)
+      document.startedAt = Date().addingTimeInterval(-31 * 86400)
       let journal = MeetingJournal(directory: folder)
       let id = try journal.save(document)
       document.segments = [TranscriptSegment(start: 0, end: 1, text: "Правка")]
@@ -98,6 +98,50 @@ final class MeetingJournalTests: XCTestCase {
       XCTAssertEqual(try journal.read(id)?.segments.first?.text, "Правка")
       XCTAssertTrue(try journal.saved(retentionDays: RecordingRetention.days, now: Date()).isEmpty)
       XCTAssertNil(try journal.read(id))
+    }
+  }
+
+  @MainActor
+  func testAutosaveTogglePreservesOneRecordWithFullTextAndOneAudioFile() throws {
+    try withFolder { folder in
+      let audioDirectory = HistoryAudioFile.directory(in: folder)
+      try FileManager.default.createDirectory(
+        at: audioDirectory, withIntermediateDirectories: true)
+      let audioName = "\(UUID().uuidString).caf"
+      let audioURL = audioDirectory.appendingPathComponent(audioName)
+      try Data([1, 2, 3]).write(to: audioURL)
+      let journal = MeetingJournal(directory: folder)
+      let workflow = MeetingWorkflow(modes: ModeCoordinator(), journal: journal)
+      var document = workflow.makeTranscript(title: "Toggle", startedAt: Date())
+      document.audioFile = audioName
+      var transcript: FileTranscript? = document
+      let id = try XCTUnwrap(workflow.beginAutosave(document, enabled: true, onError: { _ in }))
+      workflow.append(
+        [TranscriptSegment(start: 0, end: 1, text: "before")], until: 1, elapsed: 1,
+        to: &transcript)
+      _ = workflow.setAutosave(
+        false, state: .recording, elapsed: 2, transcript: transcript, onError: { _ in })
+      workflow.append(
+        [TranscriptSegment(start: 1, end: 2, text: "while off")], until: 2, elapsed: 2,
+        to: &transcript)
+      let resumed = workflow.setAutosave(
+        true, state: .recording, elapsed: 2, transcript: transcript, onError: { _ in })
+      workflow.append(
+        [TranscriptSegment(start: 2, end: 3, text: "after")], until: 3, elapsed: 3,
+        to: &transcript)
+      workflow.finalize(&transcript, elapsed: 3, reason: .requested)
+
+      XCTAssertEqual(resumed, id)
+      let records = try journal.saved(retentionDays: RecordingRetention.days, now: Date())
+      XCTAssertEqual(records.map(\.id), [id])
+      XCTAssertEqual(
+        records.first?.transcript.segments.map(\.text), ["before", "while off", "after"])
+      XCTAssertEqual(records.first?.transcript.audioFile, audioName)
+      XCTAssertEqual(records.first?.transcript.complete, true)
+
+      try journal.delete(id)
+      XCTAssertTrue(try journal.saved(retentionDays: RecordingRetention.days, now: Date()).isEmpty)
+      XCTAssertFalse(FileManager.default.fileExists(atPath: audioURL.path))
     }
   }
 }

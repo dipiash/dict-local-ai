@@ -110,7 +110,7 @@
 "files.there-are-no-complete-segments" = "There are no complete segments to update safely. Check the timestamps and assign the speaker manually.";
 "files.these-are-suggestions-listen-to" = "These are suggestions. Listen to the recording and fix speaker labels where needed.";
 "files.this-updates-only-the-complete" = "This updates only the complete segments in this episode. Other segments with these IDs stay as they are.";
-"files.timestamps-are-approximate-and-start" = "Timestamps are approximate and start at the beginning of the file. You can edit speaker names. Audio is not saved. When history is on, text is kept for up to seven days.";
+"files.timestamps-are-approximate-and-start" = "Timestamps are approximate and start at the beginning of the file. You can edit speaker names. When history is on, text and audio are kept locally for 30 days.";
 "files.turn-audio-files-into-text" = "Turn audio files into text.";
 "files.up-to-3-hours-on" = "Up to 3 hours · on device · one file at a time";
 "history.all" = "All";
@@ -147,7 +147,7 @@
 "history.select-a-record" = "Select a Record";
 "history.show-all-records" = "Show All Records";
 "history.this-deletion-is-permanent-original" = "This deletion is permanent. Original audio files stay intact.";
-"history.this-record-s-text-and" = "This record’s text and formatting will be deleted.";
+"history.this-record-s-text-and" = "This record’s text, formatting, and saved audio will be deleted.";
 "history.unsaved-changes" = "Unsaved Changes";
 "history.view-edit-copy-or-export" = "View, edit, copy, or export a result here.";
 "meeting.all-saved-meetings-deleted" = "All saved meetings deleted.";
@@ -182,7 +182,7 @@
 "meeting.start-new-meeting" = "Start New Meeting";
 "meeting.stopping-recording-and-processing-the" = "Stopping recording and processing the remaining audio…";
 "meeting.system-audio" = "System Audio";
-"meeting.text-is-saved-locally-for" = "Text is saved locally for seven days. Audio is not saved.";
+"meeting.text-is-saved-locally-for" = "Text and audio are saved locally for 30 days.";
 "meeting.the-app-received-system-audio" = "✓ The app received system audio during this recording.";
 "meeting.the-audio-timeline-is-out" = "The audio timeline is out of order for channel %@";
 "meeting.the-mac-went-to-sleep" = "The Mac went to sleep. The processed part was saved.";
@@ -295,7 +295,7 @@
 "settings.continue-without-saving" = "Continue Without Saving";
 "settings.could-not-change-setting" = "Could Not Change Setting";
 "settings.current-system-microphone" = "Current system microphone";
-"settings.dictation-meetings-and-files-share" = "Dictation, meetings, and files share one local database. Audio is not stored.";
+"settings.dictation-meetings-and-files-share" = "Dictation, meetings, and files share one local database. When history is on, the text of each record is kept on this Mac for 30 days.";
 "settings.enter-text-in-apps-and" = "Enter text in apps and editors.";
 "settings.general" = "General";
 "settings.hold-to-record" = "Hold to Record";
@@ -303,7 +303,7 @@
 "settings.input-monitoring-access-granted" = "Input Monitoring access granted";
 "settings.input-monitoring-for-shortcuts" = "Input Monitoring — for shortcuts";
 "settings.install-parakeet-ultra-to-continue" = "Install Parakeet Ultra to continue";
-"settings.keep-text-for-the-last" = "Keep text for the last 7 days";
+"settings.keep-text-for-the-last" = "Keep text for the last 30 days";
 "settings.macos-asks-for-access-the" = "macOS asks for access the first time you record a meeting. There is no public API to check before recording.";
 "settings.microphone" = "Microphone";
 "settings.microphone-access-granted" = "✓ Microphone access granted";
@@ -341,7 +341,7 @@
 "settings.storage" = "Storage";
 "settings.system-audio-audio-only-access" = "System Audio — audio-only access";
 "settings.technology-and-licenses" = "Technology and Licenses";
-"settings.text-is-stored-locally-for" = "Text is stored locally for seven days when history is on.";
+"settings.text-is-stored-locally-for" = "Text and audio are stored locally for 30 days when history is on.";
 "settings.the-app-source-code-is" = "The app source code is available under the MIT license.";
 "settings.toggle-recording" = "Toggle Recording";
 "settings.transcribe-meetings-and-audio-files" = "Transcribe meetings and audio files with speaker labels.";

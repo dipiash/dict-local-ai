@@ -30,6 +30,8 @@ public struct FileTranscript: Codable, Equatable, Sendable {
   public var asrWarnings: [String]?
   public var speakerNames: [String: String] = [:]
   public var speakerNameSuggestions: [String: String] = [:]
+  // Relative name of the audio file removed when this record is deleted.
+  public var audioFile: String?
   public var segments: [TranscriptSegment] = []
   public let timestampBasis: String
   public let timestampPrecision: String
@@ -84,6 +86,9 @@ public struct FileTranscript: Codable, Equatable, Sendable {
   public func json() throws -> Data {
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-    return try encoder.encode(self)
+    // The audio file name points into the app's private history folder, so it is not exported.
+    var exported = self
+    exported.audioFile = nil
+    return try encoder.encode(exported)
   }
 }

@@ -6,14 +6,26 @@ import Foundation
 public final class RecordingStore: RecordingHistoryRepository, @unchecked Sendable {
   private let lock = NSRecursiveLock()
   private let onEvent: @Sendable (String, String) -> Void
+  private let audioDirectory: URL?
+  private let removeFile: @Sendable (URL) -> Bool
 
   // Keep text and file paths out of storage logs.
-  private func traced<T>(_ operation: String, _ details: String, body: () throws -> T) throws -> T {
+  // `okDetails` can add fields to the success event, or return nil to stay quiet.
+  private func traced<T>(
+    _ operation: String, _ details: String, okDetails: ((T) -> String?)? = nil,
+    body: () throws -> T
+  ) throws -> T {
     let start = ProcessInfo.processInfo.systemUptime
     do {
       let result = try body()
       let millis = Int((ProcessInfo.processInfo.systemUptime - start) * 1_000)
-      onEvent(operation + "_ok", "\(details) ms=\(millis)")
+      if let okDetails {
+        if let extra = okDetails(result) {
+          onEvent(operation + "_ok", "\(details) \(extra) ms=\(millis)")
+        }
+      } else {
+        onEvent(operation + "_ok", "\(details) ms=\(millis)")
+      }
       return result
     } catch {
       let millis = Int((ProcessInfo.processInfo.systemUptime - start) * 1_000)
@@ -33,10 +45,15 @@ public final class RecordingStore: RecordingHistoryRepository, @unchecked Sendab
   private let decoder = JSONDecoder()
 
   public init(
-    url: URL,
-    onEvent: @escaping @Sendable (String, String) -> Void = { _, _ in }
+    url: URL, audioDirectory: URL? = nil,
+    onEvent: @escaping @Sendable (String, String) -> Void = { _, _ in },
+    removeFile: @escaping @Sendable (URL) -> Bool = {
+      (try? FileManager.default.removeItem(at: $0)) != nil
+    }
   ) throws {
     self.onEvent = onEvent
+    self.audioDirectory = audioDirectory
+    self.removeFile = removeFile
     let directory = url.deletingLastPathComponent()
     try FileManager.default.createDirectory(
       at: directory, withIntermediateDirectories: true,
@@ -266,6 +283,12 @@ public final class RecordingStore: RecordingHistoryRepository, @unchecked Sendab
       try transactional {
         var meta = transcript
         meta.segments = []
+        // Keep bulk-deleted audio detached even if a session still references its former filename.
+        if let name = meta.audioFile, !name.isEmpty, try existingAudioFilename(id) == nil,
+          !hasStoredAudio(name)
+        {
+          meta.audioFile = nil
+        }
         let update = try statement(
           """
           UPDATE recordings SET title=?,updated_at=?,duration=?,processed_until=?,
@@ -294,6 +317,23 @@ public final class RecordingStore: RecordingHistoryRepository, @unchecked Sendab
       }
 
     }
+  }
+
+  private func existingAudioFilename(_ id: UUID) throws -> String? {
+    let read = try statement("SELECT meta FROM recordings WHERE id=?")
+    defer { sqlite3_finalize(read) }
+    text(id.uuidString, at: 1, in: read)
+    guard sqlite3_step(read) == SQLITE_ROW,
+      let meta = try? decoder.decode(FileTranscript.self, from: columnData(read, 0)),
+      let name = meta.audioFile, !name.isEmpty
+    else { return nil }
+    return name
+  }
+
+  // Without an audio folder nothing can be checked, so the name is trusted.
+  private func hasStoredAudio(_ name: String) -> Bool {
+    guard let audioDirectory else { return true }
+    return FileManager.default.fileExists(atPath: audioDirectory.appendingPathComponent(name).path)
   }
 
   public func finish(_ id: UUID, duration: Double, complete: Bool) throws {
@@ -399,10 +439,14 @@ public final class RecordingStore: RecordingHistoryRepository, @unchecked Sendab
     try traced("delete", "id=\(id.uuidString.prefix(8))") {
       lock.lock()
       defer { lock.unlock() }
+      let audio = try audioFiles("SELECT meta FROM recordings WHERE id=?") {
+        text(id.uuidString, at: 1, in: $0)
+      }
       let stmt = try statement("DELETE FROM recordings WHERE id=?")
       defer { sqlite3_finalize(stmt) }
       text(id.uuidString, at: 1, in: stmt)
       try changed(stmt)
+      removeAudio(audio)
 
     }
   }
@@ -412,27 +456,192 @@ public final class RecordingStore: RecordingHistoryRepository, @unchecked Sendab
       lock.lock()
       defer { lock.unlock() }
       if let category {
+        let audio = try audioFiles("SELECT meta FROM recordings WHERE category=?") {
+          text(category.rawValue, at: 1, in: $0)
+        }
         let stmt = try statement("DELETE FROM recordings WHERE category=?")
         defer { sqlite3_finalize(stmt) }
         text(category.rawValue, at: 1, in: stmt)
         try changed(stmt)
+        removeAudio(audio)
       } else {
+        let audio = try audioFiles("SELECT meta FROM recordings") { _ in }
         try execute("DELETE FROM recordings")
+        removeAudio(audio)
+        // Files younger than 10 minutes may belong to a recording in progress.
+        removeOrphanedAudio(before: Date().addingTimeInterval(-600))
       }
 
     }
   }
 
   public func prune(retentionDays: Int, now: Date = Date()) throws {
-    try traced("prune", "days=\(retentionDays)") {
+    // Suppress empty reports from the once-per-minute pruning check.
+    let okDetails: ((rows: Int, files: Int)) -> String? = { result in
+      result.rows == 0 && result.files == 0 ? nil : "rows=\(result.rows)"
+    }
+    try traced("prune", "days=\(retentionDays)", okDetails: okDetails) {
       lock.lock()
       defer { lock.unlock() }
+      let cutoff = now.addingTimeInterval(-Double(retentionDays) * 86_400)
+      let audio = try audioFiles("SELECT meta FROM recordings WHERE created_at < ?") {
+        sqlite3_bind_double($0, 1, cutoff.timeIntervalSince1970)
+      }
       let stmt = try statement("DELETE FROM recordings WHERE created_at < ?")
       defer { sqlite3_finalize(stmt) }
-      sqlite3_bind_double(
-        stmt, 1, now.addingTimeInterval(-Double(retentionDays) * 86_400).timeIntervalSince1970)
+      sqlite3_bind_double(stmt, 1, cutoff.timeIntervalSince1970)
       try changed(stmt)
-
+      let rows = Int(sqlite3_changes(database))
+      let linked = removeAudio(audio, source: "record")
+      let orphans = removeOrphanedAudio(before: cutoff)
+      return (rows: rows, files: linked + orphans)
     }
+  }
+  public func audioUsage() -> AudioStorageUsage {
+    lock.lock()
+    defer { lock.unlock() }
+    let files = storedAudioEntries()
+    return AudioStorageUsage(files: files.count, bytes: files.reduce(0) { $0 + $1.bytes })
+  }
+
+  // Protect recent orphan files while their recording records may still be pending.
+  private static let freshAudioSeconds: TimeInterval = 60
+
+  /// Clears `audioFile` in every record and deletes all audio files except the ones in `active`.
+  /// Texts, titles and times of the records stay as they are.
+  public func clearSavedAudio(active: () -> Set<String>) throws -> AudioCleanupResult {
+    let okDetails: (AudioCleanupResult) -> String? = { result in
+      "files=\(result.files) skipped_active=\(result.skippedActive)"
+    }
+    return try traced("clearSavedAudio", "scope=all", okDetails: okDetails) {
+      let plan = try planAudioCleanup(active: active)
+      // File names are random UUIDs, so a new recording never takes a name from this list.
+      var removed = 0
+      var bytes: Int64 = 0
+      for file in plan.doomed where removeFile(file.url) {
+        removed += 1
+        bytes += file.bytes
+      }
+      return AudioCleanupResult(files: removed, bytes: bytes, skippedActive: plan.skipped)
+    }
+  }
+
+  // Holds the lock only while rows change, so saving a dictation never waits for file deletes.
+  private func planAudioCleanup(active: () -> Set<String>) throws -> (
+    doomed: [(url: URL, bytes: Int64)], skipped: Int
+  ) {
+    lock.lock()
+    defer { lock.unlock() }
+    let keep = active()
+    let linked = try recordsReferencingAudio()
+    try transactional {
+      let update = try statement("UPDATE recordings SET meta=? WHERE id=?")
+      defer { sqlite3_finalize(update) }
+      for (id, meta) in linked where !keep.contains(meta.audioFile ?? "") {
+        var cleared = meta
+        cleared.audioFile = nil
+        sqlite3_reset(update)
+        blob(try encoder.encode(cleared), at: 1, in: update)
+        text(id, at: 2, in: update)
+        try changed(update)
+      }
+    }
+    let linkedNames = Set(linked.compactMap { $0.1.audioFile })
+    let now = Date()
+    var doomed: [(url: URL, bytes: Int64)] = []
+    var skipped = 0
+    for entry in storedAudioEntries() {
+      let fresh = now.timeIntervalSince(entry.modified) < Self.freshAudioSeconds
+      if keep.contains(entry.name) || (fresh && !linkedNames.contains(entry.name)) {
+        skipped += 1
+      } else {
+        doomed.append((entry.url, entry.bytes))
+      }
+    }
+    return (doomed, skipped)
+  }
+
+  private func recordsReferencingAudio() throws -> [(String, FileTranscript)] {
+    let stmt = try statement("SELECT id,meta FROM recordings")
+    defer { sqlite3_finalize(stmt) }
+    var result: [(String, FileTranscript)] = []
+    while sqlite3_step(stmt) == SQLITE_ROW {
+      guard let meta = try? decoder.decode(FileTranscript.self, from: columnData(stmt, 1)),
+        let name = meta.audioFile, !name.isEmpty
+      else { continue }
+      result.append((columnText(stmt, 0), meta))
+    }
+    return result
+  }
+
+  private func storedAudioEntries() -> [(name: String, url: URL, bytes: Int64, modified: Date)] {
+    guard let audioDirectory,
+      let urls = try? FileManager.default.contentsOfDirectory(
+        at: audioDirectory,
+        includingPropertiesForKeys: [.fileSizeKey, .contentModificationDateKey, .isRegularFileKey],
+        options: [.skipsHiddenFiles])
+    else { return [] }
+    return urls.compactMap { url in
+      guard
+        let values = try? url.resourceValues(forKeys: [
+          .fileSizeKey, .contentModificationDateKey, .isRegularFileKey,
+        ]), values.isRegularFile == true
+      else { return nil }
+      return (
+        url.lastPathComponent, url, Int64(values.fileSize ?? 0),
+        values.contentModificationDate ?? .distantPast
+      )
+    }
+  }
+
+  private struct StoredAudioReference: Decodable { let audioFile: String? }
+
+  private func audioFiles(_ sql: String, bind: (OpaquePointer) -> Void) throws -> [String] {
+    guard audioDirectory != nil else { return [] }
+    let stmt = try statement(sql)
+    defer { sqlite3_finalize(stmt) }
+    bind(stmt)
+    var names: [String] = []
+    while sqlite3_step(stmt) == SQLITE_ROW {
+      if let name = try? decoder.decode(StoredAudioReference.self, from: columnData(stmt, 0))
+        .audioFile
+      {
+        names.append(name)
+      }
+    }
+    return names
+  }
+
+  // Delete audio after removing its row so failed record deletion leaves the audio intact.
+  @discardableResult
+  private func removeAudio(_ names: [String], source: String = "record") -> Int {
+    guard let audioDirectory else { return 0 }
+    var removed = 0
+    for name in names where !name.isEmpty && !name.contains("/") && !name.hasPrefix(".") {
+      if (try? FileManager.default.removeItem(at: audioDirectory.appendingPathComponent(name)))
+        != nil
+      {
+        removed += 1
+      }
+    }
+    if !names.isEmpty {
+      onEvent("audio_removed", "source=\(source) files=\(removed) linked=\(names.count)")
+    }
+    return names.count
+  }
+
+  // Covers audio of recordings that were never saved, for example after a crash.
+  @discardableResult
+  private func removeOrphanedAudio(before cutoff: Date) -> Int {
+    guard let audioDirectory,
+      let files = try? FileManager.default.contentsOfDirectory(
+        at: audioDirectory, includingPropertiesForKeys: [.contentModificationDateKey])
+    else { return 0 }
+    let old = files.filter {
+      let modified = try? $0.resourceValues(forKeys: [.contentModificationDateKey])
+        .contentModificationDate
+      return modified.map { $0 < cutoff } ?? false
+    }
+    return removeAudio(old.map(\.lastPathComponent), source: "orphan")
   }
 }

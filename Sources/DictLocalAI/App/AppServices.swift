@@ -264,7 +264,7 @@ final class AppServices: ObservableObject {
   }
   func shutdown() {
     meeting.shutdown()
-    files.cancel()
+    files.shutdown()
     dictation.shutdown()
   }
 }

@@ -25,6 +25,7 @@ final class MeetingJournal: MeetingJournalPort, Sendable {
     }
     return try RecordingStore(
       url: folder.appendingPathComponent("recordings.sqlite3"),
+      audioDirectory: HistoryAudioFile.directory(in: folder),
       onEvent: { event, details in DiagnosticLog.shared.event("history-db", event, details) })
   }
 
@@ -40,6 +41,18 @@ final class MeetingJournal: MeetingJournalPort, Sendable {
       } catch { self.fail(error) }
     }
     return id
+  }
+
+  func resumeRecord(_ id: UUID, with transcript: FileTranscript) {
+    selected.withLock { $0 = id }
+    DiagnosticLog.shared.event(
+      "meeting", "autosave_resumed",
+      "record=\(id.uuidString.prefix(8)) segments=\(transcript.segments.count)")
+    Self.writer.async {
+      do { try Self.database(in: self.folder).replace(id, transcript: transcript) } catch {
+        self.fail(error)
+      }
+    }
   }
 
   func append(_ segments: [TranscriptSegment], until: Double) {

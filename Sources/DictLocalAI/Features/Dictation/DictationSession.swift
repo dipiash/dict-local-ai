@@ -19,6 +19,7 @@ final class DictationSession: ObservableObject {
   private var pendingFinish = false
   private var preparingMicrophone = false
   private var audioRequestID = UUID()
+  private var latestRecordedAudio: HistoryAudioFile?
   @Published private(set) var phase = DictationPhase.idle
   @Published private(set) var message = ""
   @Published private(set) var text = ""
@@ -40,7 +41,9 @@ final class DictationSession: ObservableObject {
   private var noticeDismissTask: Task<Void, Never>?
   private let makeAudio: (@escaping @MainActor @Sendable () -> Void) -> any DictationCapturing
   private lazy var audio = makeAudio { [weak self] in
-    self?.interrupt(reason: L10n.text("dictation.the-microphone-changed-or-disconnected"))
+    self?.interrupt(
+      reason: L10n.text("dictation.the-microphone-changed-or-disconnected"),
+      cause: "microphone_changed")
   }
   private var session: RecognitionSession?
   private var sentSamples = 0
@@ -71,7 +74,9 @@ final class DictationSession: ObservableObject {
     hotkeys.onCancel = { [weak self] in self?.cancel() }
     hotkeys.isBusy = { [weak self] in self?.phase == .recording || self?.phase == .processing }
     hotkeys.onUnavailable = { [weak self] in
-      self?.interrupt(reason: L10n.text("dictation.keyboard-input-was-interrupted-recording"))
+      self?.interrupt(
+        reason: L10n.text("dictation.keyboard-input-was-interrupted-recording"),
+        cause: "keyboard_unavailable")
     }
     preferences.$hold.sink { [weak self] in self?.hotkeys.hold = $0 }.store(in: &subscriptions)
     preferences.$toggle.sink { [weak self] in self?.hotkeys.toggle = $0 }.store(in: &subscriptions)
@@ -85,7 +90,7 @@ final class DictationSession: ObservableObject {
         object: nil, queue: .main
       ) { [weak self] _ in
         MainActor.assumeIsolated {
-          self?.interrupt(reason: L10n.text("dictation.the-mac-went-to-sleep"))
+          self?.interrupt(reason: L10n.text("dictation.the-mac-went-to-sleep"), cause: "sleep")
         }
       })
     observers.append(
@@ -94,7 +99,8 @@ final class DictationSession: ObservableObject {
         object: nil, queue: .main
       ) { [weak self] _ in
         MainActor.assumeIsolated {
-          self?.interrupt(reason: L10n.text("dictation.the-screen-locked-you-can"))
+          self?.interrupt(
+            reason: L10n.text("dictation.the-screen-locked-you-can"), cause: "screen_locked")
         }
       })
     timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
@@ -152,7 +158,7 @@ final class DictationSession: ObservableObject {
           },
           onFailure: { [weak self] error in
             guard let self, self.session === current, !current.cancelled else { return }
-            self.interrupt(reason: L10n.error(error))
+            self.interrupt(reason: L10n.error(error), cause: "recognition_failed")
           })
         guard self.session === current, !current.cancelled else {
           engine.cancel()
@@ -170,7 +176,8 @@ final class DictationSession: ObservableObject {
           DiagnosticLog.shared.event("audio", "engine_start_timeout", "after=10s")
           self.interrupt(
             reason:
-              L10n.text("dictation.the-microphone-did-not-start"))
+              L10n.text("dictation.the-microphone-did-not-start"),
+            cause: "microphone_start_timeout")
         }
         try await audio.start(deviceID: selectedDevice, requestID: requestID)
         guard self.session === current, !current.cancelled, !Task.isCancelled else {
@@ -275,7 +282,14 @@ final class DictationSession: ObservableObject {
       switch result {
       case .success:
         let duration = Double(self.sentSamples) / 16_000
-        let completion = DictationCompletion(transcript: self.transcript, duration: duration)
+        var completion = DictationCompletion(transcript: self.transcript, duration: duration)
+        var savedAudio: HistoryAudioFile?
+        if completion != nil {
+          savedAudio = HistoryAudioFile.save(
+            self.audio.copy(from: 0), enabled: self.preferences.saveHistory)
+          completion?.audioFile = savedAudio?.name
+          self.latestRecordedAudio = savedAudio
+        }
         self.workflow.release(self.lease)
         self.pipeline = nil
         self.audio.erase()
@@ -307,12 +321,16 @@ final class DictationSession: ObservableObject {
           })
         switch history {
         case .success: self.historySaved()
-        case .failure(let error): self.historySaveFailed(error)
-        case nil: break
+        case .failure(let error):
+          // Discard the audio because no saved record will manage its lifetime.
+          savedAudio?.discard()
+          self.transcript?.audioFile = nil
+          self.historySaveFailed(error)
+        case nil: savedAudio?.discard()
         }
         DiagnosticLog.shared.event(
           "dictation", "completed",
-          "chars=\(completion.text.count) insertion=\(outcome) completion_target=\(self.completionTarget == nil ? "none" : "present")"
+          "chars=\(completion.text.count) insertion=\(outcome) completion_target=\(self.completionTarget == nil ? "none" : "present") audio=\(self.preferences.saveHistory ? "saved" : "off")"
         )
         switch outcome {
         case .inserted:
@@ -381,7 +399,7 @@ final class DictationSession: ObservableObject {
           },
           onFailure: { [weak self] error in
             guard let self, self.session === current, !current.cancelled else { return }
-            self.interrupt(reason: L10n.error(error))
+            self.interrupt(reason: L10n.error(error), cause: "recognition_failed")
           })
         guard self.session === current, !current.cancelled else {
           engine.cancel()
@@ -408,9 +426,10 @@ final class DictationSession: ObservableObject {
       }
     }
   }
-  func interrupt(reason: String) {
-    DiagnosticLog.shared.event("dictation", "interrupted", "phase=\(phase)")
+  /// `cause` is a stable code for the log; `reason` is the text shown to the user.
+  func interrupt(reason: String, cause: String) {
     guard phase == .recording || phase == .processing else { return }
+    DiagnosticLog.shared.event("dictation", "interrupted", "phase=\(phase) reason=\(cause)")
     preparingMicrophone = false
     pendingFinish = false
     let requestID = audioRequestID
@@ -539,6 +558,8 @@ final class DictationSession: ObservableObject {
   }
   func shutdown() {
     cancel()
+    // Wait for the file to finish so the History reference points to a complete recording.
+    latestRecordedAudio?.finalizeBeforeExit()
     timer?.invalidate()
     hotkeys.shutdown()
   }
