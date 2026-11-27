@@ -55,6 +55,46 @@ APPLESCRIPT
 ui_wait_for_log_event 'history-audio] play_seek.*source=slider' "$SEEKS" 10 || ui_fail "No play_seek after a slider step"
 echo "PASS: slider step seeks (play_seek source=slider)"
 
+# 3b. A mouse click on the slider, then the right arrow: the panel steps the sound (the clicked slider does not take the keys).
+# Restart the short fixture because arrow keys seek only while it plays.
+ui_fail_with_log() {
+  echo "--- last history-ui and history-audio lines of the test copy ---" >&2
+  grep -E 'history-(ui|audio)\]' "$UI_LOG_FILE" | tail -n 15 >&2 || true
+  ui_fail "$*"
+}
+BEFORE="$(ui_log_count 'history-audio] play_(started|seek)')"
+ui_osascript <<'APPLESCRIPT'
+my requireFront()
+tell application "System Events" to click (my waitById("history-segment-play-0", 10))
+APPLESCRIPT
+ui_wait_for_log_event 'history-audio] play_(started|seek)' "$BEFORE" 10 || ui_fail_with_log "No play_started after the segment button before the slider click"
+SEEKS="$(ui_log_count 'history-audio] play_seek.*source=slider')"
+CLICKS="$(ui_log_count 'history-ui] click')"
+ui_osascript <<'APPLESCRIPT'
+set theSlider to my waitByAttr("AXSlider", "AXDescription", {"Playback position", "Позиция воспроизведения"}, 10)
+my requireFront()
+tell application "System Events"
+  set {px, py} to position of theSlider
+  set {sx, sy} to size of theSlider
+  click at {px + (sx * 0.3), py + (sy / 2)}
+end tell
+APPLESCRIPT
+ui_wait_for_log_event 'history-ui] click' "$CLICKS" 10 || ui_fail_with_log "The click on the slider did not reach the History window"
+if [[ "$(ui_log_count 'history-audio] play_seek.*source=slider')" -gt "$SEEKS" ]]; then
+  echo "INFO: the click on the slider made a seek"
+else
+  echo "INFO: the click on the slider made no seek"
+fi
+SEEKS="$(ui_log_count 'history-audio] play_seek.*source=slider')"
+ARROWS="$(ui_log_count 'history-ui] arrow_key.*playing=true handled=true')"
+ui_osascript <<'APPLESCRIPT'
+my requireFront()
+tell application "System Events" to key code 124
+APPLESCRIPT
+ui_wait_for_log_event 'history-ui] arrow_key.*playing=true handled=true' "$ARROWS" 10 || ui_fail_with_log "The right arrow after a slider click was not taken by the panel"
+ui_wait_for_log_event 'history-audio] play_seek.*source=slider' "$SEEKS" 10 || ui_fail_with_log "No play_seek after the right arrow"
+echo "PASS: right arrow after a slider click seeks (play_seek source=slider)"
+
 BEFORE="$(ui_log_count 'history-audio] play_(started|seek)')"
 ui_osascript <<'APPLESCRIPT'
 my requireFront()
