@@ -32,7 +32,7 @@ class LocalUsageLoggingContract(unittest.TestCase):
                       'keyboardValue', 'rawText', 'sourceURL'):
             self.assertNotIn(token, usage)
         self.assertIn('approved.contains(choice)', usage)
-        prefs = (APP / 'Features/Settings/Preferences.swift').read_text()
+        prefs = (APP / 'Shared/Preferences/Preferences.swift').read_text()
         self.assertIn('microphone.isEmpty ? "system" : "custom"', prefs)
         self.assertNotIn('choice: microphone)', prefs)
 

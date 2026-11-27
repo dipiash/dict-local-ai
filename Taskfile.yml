@@ -74,7 +74,7 @@ tasks:
       - task: ui:busy-notice
       - task: ui:clipboard-restore
   lint:
-    desc: Run Swift format, SwiftLint and ShellCheck
+    desc: Run dependency, Swift format, SwiftLint and shell checks
     cmds:
       - bash scripts/development/lint.sh
   format:

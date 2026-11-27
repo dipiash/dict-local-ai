@@ -4,7 +4,8 @@ import SwiftUI
 struct MeetingView: View {
   @ObservedObject var controller: MeetingSession
   @ObservedObject var preferences: Preferences
-  @ObservedObject var models: AppServices
+  let speechReady: Bool
+  let speakerModelsReady: Bool
   private enum Confirmation: Identifiable {
     case newMeeting
     var id: String { "new" }
@@ -27,7 +28,7 @@ struct MeetingView: View {
             )
             .font(AppStyle.caption).foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
-            if !models.speakerModelsReady {
+            if !speakerModelsReady {
               WorkspaceStatusBanner(
                 message: L10n.text("meeting.nemotron-3-is-not-ready"),
                 kind: .warning)
@@ -51,7 +52,7 @@ struct MeetingView: View {
                   UsageTelemetry.action(.meeting, .startMeeting)
                   if controller.unsaved { confirmation = .newMeeting } else { controller.start() }
                 }.buttonStyle(.borderedProminent)
-                  .disabled(!models.ready || !models.speakerModelsReady)
+                  .disabled(!speechReady || !speakerModelsReady)
 
               }
             }

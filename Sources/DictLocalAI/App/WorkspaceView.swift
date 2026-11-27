@@ -129,11 +129,14 @@ struct WorkspaceView: View {
         switch controller.router.selected {
         case .dictation:
           DictationWorkspaceView(controller: controller.dictation, preferences: preferences)
-        case .files: FileTranscriptionView(controller: controller.files, models: controller)
+        case .files:
+          FileTranscriptionView(
+            controller: controller.files, speechReady: controller.ready,
+            speakerModelsReady: controller.speakerModelsReady)
         case .meeting:
           MeetingView(
             controller: controller.meeting, preferences: controller.preferences,
-            models: controller)
+            speechReady: controller.ready, speakerModelsReady: controller.speakerModelsReady)
         case .settings: settings
         case .history: HistoryView(store: controller.history, meeting: controller.meeting)
         case .about: about
@@ -421,7 +424,13 @@ struct WorkspaceView: View {
         switch settingsTab {
         case .general: generalSettings
         case .permissions: permissionsSettings
-        case .models: ModelsView(controller: controller)
+        case .models:
+          ModelsView(
+            speechReady: controller.ready, speakerModelsReady: controller.speakerModelsReady,
+            installing: controller.installing, progress: controller.progress,
+            message: controller.setupMessage,
+            installDisabled: controller.installing || controller.modes.active != nil,
+            modelRevision: controller.modelRevision, installModel: controller.installModel)
         case .shortcuts: shortcutsSettings
         case .microphone: microphoneSettings
         case .storage: storageSettings
