@@ -1,0 +1,38 @@
+name: Desktop tests
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: dict-local-ai-desktop-tests
+  cancel-in-progress: false
+jobs:
+  desktop:
+    if: github.ref == 'refs/heads/main' && vars.DICT_DESKTOP_CI == 'true'
+    runs-on: [self-hosted, macOS, ARM64, dict-local-ai-desktop]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Check desktop and toolchain prerequisites
+        run: |
+          launchctl print "gui/$(id -u)" >/dev/null
+          test "$(uname -m)" = arm64
+          swift --version
+          bash scripts/development/bootstrap-tools.sh
+      - name: Install the current build
+        id: install
+        run: task install
+      - name: Run navigation, layout, History and Storage checks
+        run: task test:ui
+      - name: Run live meeting and clipboard scenarios
+        run: task test:ui:live
+      - name: Quit the test app
+        if: always() && steps.install.outcome == 'success'
+        run: |
+          if pgrep -x DictLocalAI >/dev/null; then
+            osascript -e 'tell application "Dict Local AI" to quit'
+          fi

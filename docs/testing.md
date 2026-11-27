@@ -22,18 +22,7 @@ applicable scenarios below before release.
 - **Unit tests** check pure logic without files, threads or the system. Most of `DictCoreTests` (transcript and recognition rules) and `DictApplicationTests` (workflows with fake adapters) are unit tests.
 - **Integration tests** use real parts: `DictStorageTests` run against a real SQLite database, and some `DictApplicationTests` and `DictMacTests` use audio files, threads and native adapters. `DictMacTests` also holds the checks for the macOS adapters.
 - Run both levels with `task check`. `scripts/development/test.sh` sets `DICT_LOG_DIR` to a temporary folder, so tests never write into the live log folder of the installed app.
-- **Hotkey concurrency.** `ShortcutConcurrencyTests` (in `DictMacTests`) checks event order, Escape handling and stop behavior under many threads. It runs with the normal tests. To check data races, build with Thread Sanitizer and preload its runtime; without `DYLD_INSERT_LIBRARIES` the run fails with "Interceptors are not working":
-
-```sh
-swift build --build-tests --sanitize=thread --scratch-path .build/tsan
-tsan_lib=$(find "$(xcode-select -p)" -name libclang_rt.tsan_osx_dynamic.dylib | head -1)
-DICT_LOG_DIR=$(mktemp -d) DYLD_INSERT_LIBRARIES="$tsan_lib" \
-  "$(xcode-select -p)/Platforms/MacOSX.platform/Developer/Library/Xcode/Agents/xctest" \
-  -XCTest ShortcutConcurrencyTests \
-  .build/tsan/debug/DictLocalAIPackageTests.xctest
-```
-
-TSan finds data races only. Ordering bugs are caught by the order tests, not by TSan.
+- **Hotkey concurrency.** The regular suite checks event order, Escape handling and tap shutdown. Run `task test:shortcut-concurrency` on Apple Silicon to repeat these tests with Thread Sanitizer. The macOS CI job runs both modes.
 
 - **Contracts.** `task test:contracts` runs the Python tests in `scripts/tests`: packaging, paths, UI tokens and source-level layout rules.
 - **Localization.** `task test:localization` builds a DMG and checks language selection and localized resources at runtime.
@@ -56,6 +45,12 @@ source tree, run portable tests on Linux, and run `task check` plus
 `task test:localization` on macOS ARM64. Desktop UI tests and real recording
 acceptance scenarios remain separate. The source-release workflow requires
 all Check jobs to pass before it creates a draft release.
+
+### Desktop CI
+
+The desktop workflow runs `task test:ui` and `task test:ui:live` on trusted updates to `main` and can be started manually on that branch. Enable it with the repository variable `DICT_DESKTOP_CI=true` and an Apple Silicon runner labeled `dict-local-ai-desktop`. The runner needs a dedicated, logged-in test account with Xcode, a stable app signing identity, installed recognition models, and working audio input and output. Grant Accessibility and Automation to the runner's test process, and microphone and system audio permissions to the signed app. Keep personal apps, files and recordings out of that account.
+
+Physical Fn-key checks, Bluetooth switching, and other manual hardware acceptance scenarios still require a Mac with the relevant hardware. The desktop workflow does not run on pull requests.
 
 ## Native acceptance (release gate)
 
