@@ -21,8 +21,8 @@ trap 'rm -rf "$work"' EXIT
 swift build --scratch-path .build/tsan --arch arm64 --build-tests --sanitize=thread
 binary_dir=$(swift build --scratch-path .build/tsan --arch arm64 --sanitize=thread --show-bin-path)
 mkdir "$work/logs"
-DICT_LOG_DIR="$work/logs" DYLD_INSERT_LIBRARIES="$tsan_library" \
-  "$test_runner" -XCTest ShortcutConcurrencyTests "$binary_dir/DictLocalAIPackageTests.xctest" \
+DICT_LOG_DIR="$work/logs" DYLD_INSERT_LIBRARIES="$tsan_library" TSAN_OPTIONS=halt_on_error=1 \
+  "$test_runner" -XCTest ShortcutConcurrencyTests "$binary_dir/DictLocalAIPackageTests.xctest" 2>&1 \
   | tee "$work/result.txt"
 if ! grep -Eq 'Executed [1-9][0-9]* tests?' "$work/result.txt"; then
   echo 'XCTest did not execute the shortcut concurrency tests.' >&2
