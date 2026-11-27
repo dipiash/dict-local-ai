@@ -73,7 +73,7 @@ final class AppServices: ObservableObject {
       preferences: preferences, hotkeys: hotkeys, recognizer: recognizer,
       makeAudio: AudioCapture.init(onInterruption:),
       workflow: DictationWorkflow(modes: modes, writer: { try RecordingDatabase.require() }),
-      historySaved: history.reload,
+      historySaved: history.didSaveHistory,
       historySaveFailed: { [history] in history.reportSaveFailure($0, category: .dictation) })
     session.ready = { [weak self] in self?.ready == true }
     return session
@@ -82,7 +82,7 @@ final class AppServices: ObservableObject {
     recognizer: recognizer,
     workflow: FileTranscriptionWorkflow(modes: modes, writer: { try RecordingDatabase.require() }),
     preferences: preferences,
-    historySaved: history.reload,
+    historySaved: history.didSaveHistory,
     historySaveFailed: { [history] in history.reportSaveFailure($0, category: .file) },
     inspectDuration: AudioFileReader.inspectDuration,
     ready: { [weak self] in self?.ready == true },
