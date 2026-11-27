@@ -33,10 +33,10 @@ second debug build, build a release app, sign, install or open the app. Use
 `task check && task install` to check changes and try the release app locally.
 `install` already opens the app, so a subsequent `run` is unnecessary.
 
-Additional checks are explicit: `test:contracts` runs only source and packaging
-contracts (including UI tokens); `test:ui` runs `ui:smoke`, then `ui:geometry`
-against the installed app; `test:localization` builds and checks a DMG. UI and
-DMG checks are separate from ordinary `test` and `check`; see [testing.md](testing.md).
+Additional checks are explicit. `test:contracts` runs source and packaging contracts.
+`test:ui` checks navigation and window geometry. Run `test:ui:live` only when
+the desktop is idle and no meeting is active because it starts a real meeting.
+`test:localization` builds and checks a DMG. See [testing.md](testing.md).
 
 Maintenance commands remain separate: `clean`; `reinstall` and `uninstall`,
 including their `:purge` variants; `permissions:doctor`, `permissions:reset`, `logs:open`
@@ -72,6 +72,20 @@ If a check fails, fix the file and stage it again. Format one file with
 `swift format format --in-place PATH` or `biome format --write PATH`.
 The hook leaves the Git index and working files intact. Run `task check`
 for lint and all regular automated tests, including debug compilation.
+
+## Headless transcription for measurements
+
+`DictLocalAI --recognize-audio <audio-file> --recognition-mode file|meeting --report-json <json>` runs the
+app's own recognition code without windows and writes one JSON file. It is a development tool and
+has no UI. Without the flag the app starts as usual. `--recognize-audio --help` prints usage.
+Exit codes: 0 success, 1 processing error (the JSON then holds `errors`), 2 wrong arguments.
+
+`task eval:transcribe -- FILE file|meeting OUT.json` builds and runs it, and adds `code_sha` and
+`code_dirty` from git. `file` uses the Files pipeline. `meeting` feeds the file to the meeting
+pipeline in 1 s blocks with real timestamps, without waiting in real time. The tool restores models
+from the installed receipts and never downloads. It does not touch the history database. Timings
+that are not measured are `"not_instrumented"`. A running app keeps its own copy of the models in
+memory, so peak memory and speed numbers are for a second copy next to it.
 
 ## Localization
 

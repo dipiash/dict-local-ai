@@ -7,7 +7,8 @@ Run `task check` on an Apple Silicon Mac. `DictCoreTests` covers transcript and 
 | `task test:contracts`    | System audio contract, UI tokens and all Python tests in `scripts/tests`.       |
 | `task test`              | `test:contracts`, then compilation and execution of all four Swift test suites. |
 | `task check`             | `lint`, then `test`. Debug compilation is already included in `test`.           |
-| `task test:ui`           | `ui:smoke`, then `ui:geometry`, using the installed app and desktop.            |
+| `task test:ui`           | Routine UI checks of navigation and window geometry.                            |
+| `task test:ui:live`      | Live UI scenario: `ui:busy-notice` (starts a real meeting).                     |
 | `task test:localization` | Build a DMG and check language selection and localized resources at runtime.    |
 
 Stages run sequentially and stop on failure. Individual tests can be skipped
@@ -15,6 +16,29 @@ when optional requirements are unavailable; check the reported skip count.
 `test` and `check` do not run the desktop UI or localization DMG scenarios, build
 a release app, or evaluate recognition quality on real recordings. Run the
 applicable scenarios below before release.
+
+## Test levels
+
+- **Unit tests** check pure logic without files, threads or the system. Most of `DictCoreTests` (transcript and recognition rules) and `DictApplicationTests` (workflows with fake adapters) are unit tests.
+- **Integration tests** use real parts: `DictStorageTests` run against a real SQLite database, and some `DictApplicationTests` and `DictMacTests` use audio files, threads and native adapters. `DictMacTests` also holds the checks for the macOS adapters.
+- Run both levels with `task check`. `scripts/development/test.sh` sets `DICT_LOG_DIR` to a temporary folder, so tests never write into the live log folder of the installed app.
+- **Hotkey concurrency.** `ShortcutConcurrencyTests` (in `DictMacTests`) checks event order, Escape handling and stop behavior under many threads. It runs with the normal tests. To check data races, build with Thread Sanitizer and preload its runtime; without `DYLD_INSERT_LIBRARIES` the run fails with "Interceptors are not working":
+
+```sh
+swift build --build-tests --sanitize=thread --scratch-path .build/tsan
+tsan_lib=$(find "$(xcode-select -p)" -name libclang_rt.tsan_osx_dynamic.dylib | head -1)
+DICT_LOG_DIR=$(mktemp -d) DYLD_INSERT_LIBRARIES="$tsan_lib" \
+  "$(xcode-select -p)/Platforms/MacOSX.platform/Developer/Library/Xcode/Agents/xctest" \
+  -XCTest ShortcutConcurrencyTests \
+  .build/tsan/debug/DictLocalAIPackageTests.xctest
+```
+
+TSan finds data races only. Ordering bugs are caught by the order tests, not by TSan.
+
+- **Contracts.** `task test:contracts` runs the Python tests in `scripts/tests`: packaging, paths, UI tokens and source-level layout rules.
+- **Localization.** `task test:localization` builds a DMG and checks language selection and localized resources at runtime.
+- **UI checks** require Accessibility access for the terminal. Run `task test:ui` for navigation and window geometry. Run `task test:ui:live` only on an idle desktop with no meeting in progress. It starts a meeting, moves its panel, and checks the notice for blocked dictation.
+- **Manual only.** Check on a live meeting: hold-to-talk and hands-free shortcuts with the real Fn key, Bluetooth headset switching, and meeting sound (system audio and microphone).
 
 ## Continuous integration
 
@@ -34,7 +58,7 @@ all Check jobs to pass before it creates a draft release.
 ## Native acceptance (release gate)
 
 - Clean source checkout; resolve FluidAudio, compare lock pin, build, test and lint on ARM64. Install both models from clean cache and run inference. Reopen offline with the current verified cache; no background downloads.
-- Check all six sections, Settings subpages, Cmd+Tab, Dock/tray, close/reopen, history with long transcripts, save/discard/cancel and quit guards. `task test:ui` runs the navigation and window geometry checks together; both remain individually available as `ui:smoke` and `ui:geometry`.
+- Check all six sections, Settings subpages, Cmd+Tab, Dock/tray, close/reopen, history with long transcripts, save/discard/cancel and quit guards. `task test:ui` runs the navigation and window geometry checks together; both remain individually available as `ui:smoke` and `ui:geometry`. `task test:ui:live` adds the busy-notice scenario that starts a meeting.
 - Hold-to-talk and hands-free dictation: bb/Monaco, browser ChatGPT, own editor, app/field switch while recording, missing target fallback, secure field. No duplicated text or lost result.
 - File transcription with/without speakers, mixed language and timestamps; test long input, cancel and partial output. Test meeting capture using only system audio, including when microphone permission is denied, exports and local retention.
 - Check local permissions and identity before/after updating with `task install`. Verify DMG contents, original icon and Applications link, no Finder window during build; open manually and inspect layout. Test distribution separately on a clean Mac.

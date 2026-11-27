@@ -54,6 +54,13 @@ tasks:
     cmds:
       - task: ui:smoke
       - task: ui:geometry
+  ui:busy-notice:
+    desc: Check the busy-dictation notice and panel position during a meeting (starts a real meeting)
+    cmds: [bash scripts/development/ui-busy-notice-macos.sh]
+  test:ui:live:
+    desc: Run live UI scenarios while the desktop is idle and no meeting is running
+    cmds:
+      - task: ui:busy-notice
   lint:
     desc: Run Swift format, SwiftLint and ShellCheck
     cmds:
