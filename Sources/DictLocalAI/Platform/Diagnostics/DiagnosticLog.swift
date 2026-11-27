@@ -13,6 +13,7 @@ final class DiagnosticLog: @unchecked Sendable {
   private var lastMainHeartbeat = ProcessInfo.processInfo.systemUptime
   private var stalled = false
   private var watchdog: DispatchSourceTimer?
+  private var dropped = DroppedLogRun()
 
   private init() {
     let environment = ProcessInfo.processInfo.environment
@@ -60,16 +61,41 @@ final class DiagnosticLog: @unchecked Sendable {
   }
 
   func event(_ area: String, _ name: String, _ values: String = "") {
-    let elapsed = String(format: "%.3f", ProcessInfo.processInfo.systemUptime - started)
-    let line = "[+\(elapsed)s] [\(area)] \(name) \(DiagnosticSanitizer.scrub(values))\n"
+    let line = format(area, name, values)
     lock.lock()
-    if let handle { handle.write(Data(line.utf8)) }
+    if let handle {
+      // Use the throwing writer so disk-full errors are handled without an Objective-C exception.
+      do {
+        if dropped.pending > 0 {
+          try handle.write(
+            contentsOf: Data(
+              format("diagnostics", "lines_dropped", "count=\(dropped.pending)").utf8))
+          dropped.clear()
+        }
+        try handle.write(contentsOf: Data(line.utf8))
+      } catch {
+        if dropped.failed() { reportFirstDroppedWrite(error) }
+      }
+    }
     lock.unlock()
     if area == "usage" {
       system.info("\(line, privacy: .public)")
     } else {
       system.debug("\(line, privacy: .private)")
     }
+  }
+
+  private func format(_ area: String, _ name: String, _ values: String) -> String {
+    let elapsed = String(format: "%.3f", ProcessInfo.processInfo.systemUptime - started)
+    return "[+\(elapsed)s] [\(area)] \(name) \(DiagnosticSanitizer.scrub(values))\n"
+  }
+
+  // Send the write failure to the system log when the file cannot accept the entry.
+  private func reportFirstDroppedWrite(_ error: Error) {
+    let ns = error as NSError
+    system.error(
+      "session log write failed domain=\(ns.domain, privacy: .public) code=\(ns.code, privacy: .public)"
+    )
   }
 
   func mainHeartbeat() {
@@ -100,4 +126,17 @@ final class DiagnosticLog: @unchecked Sendable {
     }
     timer.resume()
   }
+}
+
+/// Track dropped lines until the next successful write can report them.
+struct DroppedLogRun {
+  private(set) var pending = 0
+
+  /// Counts a lost line. True for the first loss of a run, which is the one to report.
+  mutating func failed() -> Bool {
+    pending += 1
+    return pending == 1
+  }
+
+  mutating func clear() { pending = 0 }
 }
