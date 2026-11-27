@@ -275,4 +275,95 @@ final class HistoryPlaybackControllerTests: XCTestCase {
     player.stop()
     XCTAssertEqual(redraws, 2)
   }
+
+  func testPlaybackTimeFormatting() {
+    XCTAssertEqual(HistoryPlaybackSlider.clock(754), "12:34")
+    XCTAssertEqual(HistoryPlaybackSlider.clock(2282), "38:02")
+    XCTAssertEqual(HistoryPlaybackSlider.clock(3723), "1:02:03")
+    XCTAssertEqual(HistoryPlaybackSlider.clock(-5), "00:00")
+  }
+
+  func testDragCommitsOneSeekOnRelease() {
+    var gate = SeekCommitTracker()
+    XCTAssertNil(gate.editingChanged(true))
+    XCTAssertNil(gate.valueChanged(10, shown: 0))
+    XCTAssertNil(gate.valueChanged(20, shown: 10))
+    XCTAssertEqual(gate.editingChanged(false), 20)
+    XCTAssertNil(gate.editingChanged(false))
+  }
+
+  func testSeekGateSeeksAtOnceWhenThePositionChangesWithoutADrag() {
+    var gate = SeekCommitTracker()
+    XCTAssertEqual(gate.valueChanged(15, shown: 10), 15)
+    XCTAssertEqual(gate.valueChanged(20, shown: 15), 20)
+  }
+
+  func testSeekGateIgnoresTheSamePositionAsShown() {
+    var gate = SeekCommitTracker()
+    XCTAssertNil(gate.valueChanged(10, shown: 10))
+  }
+
+  func testSeekGateDoesNotSeekAgainWhenTheSamePositionArrivesAfterRelease() {
+    var gate = SeekCommitTracker()
+    XCTAssertNil(gate.editingChanged(true))
+    XCTAssertNil(gate.valueChanged(1042.2, shown: 0))
+    XCTAssertEqual(gate.editingChanged(false), 1042.2)
+    // Playback has advanced beyond the earlier slider value.
+    XCTAssertNil(gate.valueChanged(1042.2, shown: 1042.22))
+  }
+
+  func testSeekGateSeeksOnceWhenThePositionChangesExclusivelyAtRelease() {
+    var gate = SeekCommitTracker()
+    XCTAssertNil(gate.editingChanged(true))
+    XCTAssertNil(gate.editingChanged(false))
+    XCTAssertEqual(gate.valueChanged(30, shown: 5), 30)
+    XCTAssertNil(gate.valueChanged(30, shown: 30.02))
+  }
+
+  func testNewDragCanCommitSamePositionAgain() {
+    var gate = SeekCommitTracker()
+    XCTAssertNil(gate.editingChanged(true, at: 0))
+    XCTAssertNil(gate.valueChanged(20, shown: 0))
+    XCTAssertEqual(gate.editingChanged(false, at: 1), 20)
+    XCTAssertNil(gate.editingChanged(true, at: 5))
+    XCTAssertNil(gate.valueChanged(20, shown: 60))
+    XCTAssertEqual(gate.editingChanged(false, at: 6), 20)
+  }
+
+  // Seen in a hosted slider: after a release SwiftUI runs press, same value, release again at once.
+  func testSeekCommitSuppressesRepeatedGestureImmediatelyAfterSeek() {
+    var gate = SeekCommitTracker()
+    XCTAssertNil(gate.editingChanged(true, at: 100.000))
+    XCTAssertNil(gate.valueChanged(1.8246989011830486, shown: 0))
+    XCTAssertEqual(gate.editingChanged(false, at: 100.041), 1.8246989011830486)
+    XCTAssertNil(gate.editingChanged(true, at: 100.041))
+    XCTAssertNil(gate.valueChanged(1.8246989011830486, shown: 1.8459989011830487))
+    XCTAssertNil(gate.editingChanged(false, at: 100.041))
+  }
+
+  func testSeekCommitSuppressesReplayAfterTwoHundredMilliseconds() {
+    var gate = SeekCommitTracker()
+    XCTAssertNil(gate.editingChanged(true, at: 10.0))
+    XCTAssertNil(gate.valueChanged(3.4, shown: 0.5))
+    XCTAssertEqual(gate.editingChanged(false, at: 10.1), 3.4)
+    XCTAssertNil(gate.editingChanged(true, at: 10.3))
+    XCTAssertNil(gate.valueChanged(3.4, shown: 3.42))
+    XCTAssertNil(gate.editingChanged(false, at: 10.3))
+  }
+
+  func testSeekGateSeeksOnADifferentPositionRightAfterARelease() {
+    var gate = SeekCommitTracker()
+    XCTAssertNil(gate.editingChanged(true, at: 0))
+    XCTAssertNil(gate.valueChanged(1, shown: 0))
+    XCTAssertEqual(gate.editingChanged(false, at: 0.1), 1)
+    XCTAssertNil(gate.editingChanged(true, at: 0.2))
+    XCTAssertNil(gate.valueChanged(2, shown: 1.1))
+    XCTAssertEqual(gate.editingChanged(false, at: 0.3), 2)
+  }
+
+  func testUnmovedDragCommitsNoSeek() {
+    var gate = SeekCommitTracker()
+    XCTAssertNil(gate.editingChanged(true))
+    XCTAssertNil(gate.editingChanged(false))
+  }
 }

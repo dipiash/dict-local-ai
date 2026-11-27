@@ -141,6 +141,7 @@
 "history.listen" = "Listen";
 "history.stop" = "Stop";
 "history.listen-from-here" = "Listen from here";
+"history.position" = "Playback position";
 "history.meeting" = "Meeting";
 "history.no-records" = "No Records";
 "history.no-records-in-this-category" = "No Records in This Category";
