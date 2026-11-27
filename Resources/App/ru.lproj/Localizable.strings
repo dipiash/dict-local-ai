@@ -343,6 +343,15 @@
 "settings.save-audio" = "Сохранять звук";
 "settings.save-audio-hint" = "Звук новых записей хранится на этом Mac 30 дней вместе с текстом. Выключите, чтобы хранить только текст: уже сохранённый звук остаётся до конца своих 30 дней. Изменение во время встречи действует со следующей записи.";
 "settings.save-and-continue" = "Сохранить и перейти";
+"settings.audio-usage" = "Звук: %@, %@";
+"settings.audio-size" = "%lld МБ";
+"settings.audio-usage-counting" = "Звук: считаю…";
+"settings.audio-usage-failed" = "Звук: не удалось посчитать";
+"settings.remove-all-audio" = "Удалить весь звук, оставить тексты";
+"settings.remove-all-audio-title" = "Удалить весь звук?";
+"settings.remove-all-audio-confirm" = "Удалить звук";
+"settings.remove-all-audio-message" = "Тексты останутся. Звук записи, которая идёт сейчас, не удаляется. Удаление нельзя отменить.";
+"settings.could-not-delete-audio" = "Не удалось удалить звук: %@";
 "settings.save-changes-to-history-before" = "Сохранить изменения истории перед переходом?";
 "settings.set-your-general-preferences" = "Настройте основные параметры приложения.";
 "settings.shortcuts" = "Клавиши";

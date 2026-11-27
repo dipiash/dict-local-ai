@@ -343,6 +343,15 @@
 "settings.save-audio" = "Save audio";
 "settings.save-audio-hint" = "Audio of new recordings is kept on this Mac for 30 days with the text. Turn it off to keep text only: audio already saved stays until its 30 days end. A change during a meeting applies from the next recording.";
 "settings.save-and-continue" = "Save and Continue";
+"settings.audio-usage" = "Audio: %@, %@";
+"settings.audio-size" = "%lld MB";
+"settings.audio-usage-counting" = "Audio: counting…";
+"settings.audio-usage-failed" = "Audio: could not count";
+"settings.remove-all-audio" = "Delete all audio, keep texts";
+"settings.remove-all-audio-title" = "Delete all audio?";
+"settings.remove-all-audio-confirm" = "Delete audio";
+"settings.remove-all-audio-message" = "Texts stay. Audio of a recording in progress is not deleted. This cannot be undone.";
+"settings.could-not-delete-audio" = "Could not delete audio: %@";
 "settings.save-changes-to-history-before" = "Save Changes to History Before Leaving?";
 "settings.set-your-general-preferences" = "Set your general preferences.";
 "settings.shortcuts" = "Shortcuts";
