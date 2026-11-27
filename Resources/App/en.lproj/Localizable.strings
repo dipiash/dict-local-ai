@@ -124,6 +124,7 @@
 "history.could-not-open-the-record" = "Could not open the record: %@";
 "history.could-not-read-history" = "Could not read history: %@";
 "history.could-not-save-changes" = "Could not save changes: %@";
+"history.record-changed-while-open" = "The record changed while it was open. Discard your edits and open it again.";
 "history.could-not-save-the-record" = "Could not save the record: %@";
 "history.database-unavailable" = "The recording database is unavailable.";
 "history.delete" = "Delete";

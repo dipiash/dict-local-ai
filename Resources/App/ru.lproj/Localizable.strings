@@ -124,6 +124,7 @@
 "history.could-not-open-the-record" = "Не удалось открыть запись: %@";
 "history.could-not-read-history" = "Не удалось прочитать историю: %@";
 "history.could-not-save-changes" = "Не удалось сохранить изменения: %@";
+"history.record-changed-while-open" = "Запись изменилась, пока была открыта. Отмените правки и откройте её снова.";
 "history.could-not-save-the-record" = "Не удалось сохранить запись: %@";
 "history.database-unavailable" = "База записей недоступна.";
 "history.delete" = "Удалить";
