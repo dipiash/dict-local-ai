@@ -15,7 +15,7 @@ final class RecordingHistoryTests: XCTestCase {
     document.segments = [
       TranscriptSegment(start: 1, end: 2, text: "Before", speakerID: "1", channel: "system")
     ]
-    document.startedAt = now.addingTimeInterval(-8 * 86_400)
+    document.startedAt = now.addingTimeInterval(-31 * 86_400)
     _ = try store.create(document, category: .file, date: try XCTUnwrap(document.startedAt))
     document.startedAt = now
     _ = try store.create(document, category: .meeting, date: now)

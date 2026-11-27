@@ -38,6 +38,7 @@ public struct SavedMeeting: Identifiable, Sendable {
 public protocol MeetingJournalPort: AnyObject {
   var onError: @MainActor @Sendable (Error) -> Void { get set }
   func begin(_ transcript: FileTranscript) -> UUID
+  func resumeRecord(_ id: UUID, with transcript: FileTranscript)
   func append(_ segments: [TranscriptSegment], until: Double)
   func replaceSegments(_ segments: [TranscriptSegment])
   func finish(duration: Double, complete: Bool)
@@ -66,6 +67,7 @@ public final class MeetingWorkflow {
   private let journal: any MeetingJournalPort
   private var lease: ModeCoordinator.Lease?
   private var journalActive = false
+  private var autosaveRecordID: UUID?
 
   public init(modes: ModeCoordinator, journal: any MeetingJournalPort) {
     self.modes = modes
@@ -75,6 +77,7 @@ public final class MeetingWorkflow {
   public func begin(state: State, ready: () -> Bool) -> Bool {
     guard state == .idle, ready(), let acquired = modes.acquire(.meeting) else { return false }
     lease = acquired
+    autosaveRecordID = nil
     return true
   }
 
@@ -106,7 +109,14 @@ public final class MeetingWorkflow {
       return nil
     }
     guard !journalActive, state == .recording, let transcript else { return nil }
-    return beginAutosave(transcript, enabled: enabled, onError: onError)
+    // Resume the existing History record so the same audio file has a single owner.
+    guard let id = autosaveRecordID else {
+      return beginAutosave(transcript, enabled: enabled, onError: onError)
+    }
+    journal.onError = onError
+    journal.resumeRecord(id, with: transcript)
+    journalActive = true
+    return id
   }
 
   public func beginAutosave(
@@ -116,7 +126,9 @@ public final class MeetingWorkflow {
     guard enabled, !journalActive else { return nil }
     journal.onError = onError
     journalActive = true
-    return journal.begin(document)
+    let id = journal.begin(document)
+    autosaveRecordID = id
+    return id
   }
 
   public func append(

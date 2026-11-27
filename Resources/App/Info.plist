@@ -13,7 +13,7 @@
 <key>CFBundleVersion</key><string>1</string>
 <key>LSMinimumSystemVersion</key><string>15.0</string>
 <key>NSHighResolutionCapable</key><true/>
-<key>NSAudioCaptureUsageDescription</key><string>Capture system audio for on-device meeting transcription. The screen image is not recorded, and audio files are not saved.</string>
+<key>NSAudioCaptureUsageDescription</key><string>Capture system audio for on-device meeting transcription. The screen image is not recorded. Audio is kept only on this Mac, for 30 days when history is on.</string>
 <key>NSMicrophoneUsageDescription</key><string>Record your voice for on-device dictation. Audio is not sent to the cloud.</string>
 <key>NSPrincipalClass</key><string>NSApplication</string>
 </dict></plist>

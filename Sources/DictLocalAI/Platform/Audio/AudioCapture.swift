@@ -36,7 +36,10 @@ actor AudioCapture: DictationCapturing {
   nonisolated var count: Int { captured.state.withLock { $0.samples.count } }
   nonisolated var level: Float { captured.state.withLock { $0.energy } }
   nonisolated func copy(from start: Int = 0) -> [Float] {
-    captured.state.withLock { Array($0.samples[min(start, $0.samples.count)...]) }
+    // From 0 the array is shared, not copied: a 30 minute buffer is about 115 MB.
+    captured.state.withLock {
+      start <= 0 ? $0.samples : Array($0.samples[min(start, $0.samples.count)...])
+    }
   }
   nonisolated func erase() {
     captured.state.withLock {

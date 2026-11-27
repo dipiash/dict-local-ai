@@ -12,6 +12,7 @@ final class FileTranscriptionSession: ObservableObject {
   @Published private(set) var message = L10n.text("files.choose-an-audio-recording-up")
   @Published private(set) var canRetry = false
   private var lastFileURL: URL?
+  private var latestImportedAudio: HistoryAudioFile?
   @Published var identifySpeakers = true
   @Published var compareChunks = true
   @Published private(set) var audit: DiarizationAudit?
@@ -154,11 +155,32 @@ final class FileTranscriptionSession: ObservableObject {
     case .diarizationFailed(let error):
       message = L10n.text("files.could-not-identify-speakers-you", L10n.error(error))
     }
+    var wasCancelled = false
+    if case .cancelled = completion { wasCancelled = true }
+    let audio =
+      preferences.saveHistory && transcript?.segments.isEmpty == false
+      ? lastFileURL.flatMap { url in
+        HistoryAudioFile.copy(
+          from: url, enabled: preferences.saveHistory,
+          limitSeconds: wasCancelled ? transcript?.processedUntil : nil,
+          onUnreadable: { [weak self] name in
+            MainActor.assumeIsolated {
+              if self?.transcript?.audioFile == name { self?.transcript?.audioFile = nil }
+            }
+          })
+      } : nil
+    transcript?.audioFile = audio?.name
+    latestImportedAudio = audio
     do {
       if try workflow.saveIfEligible(transcript, enabled: preferences.saveHistory) {
         historySaved()
+      } else {
+        audio?.discard()
+        transcript?.audioFile = nil
       }
     } catch {
+      audio?.discard()
+      transcript?.audioFile = nil
       historySaveFailed(error)
     }
   }
@@ -214,6 +236,11 @@ final class FileTranscriptionSession: ObservableObject {
     session?.cancel()
     preparation?.cancel()
     message = L10n.text("files.canceling")
+  }
+  func shutdown() {
+    cancel()
+    // Stop a long import at the next minute boundary during shutdown.
+    latestImportedAudio?.finalizeBeforeExit()
   }
   func saveAudit() {
     guard !running, let audit else { return }

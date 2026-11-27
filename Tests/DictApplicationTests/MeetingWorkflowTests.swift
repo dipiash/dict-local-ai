@@ -15,7 +15,7 @@ final class MeetingWorkflowTests: XCTestCase {
     let document = workflow.makeTranscript(title: "Meeting", startedAt: started)
     XCTAssertEqual(document.startedAt, started)
     var transcript: FileTranscript? = document
-    XCTAssertNotNil(workflow.beginAutosave(document, enabled: true, onError: { _ in }))
+    let recordID = try XCTUnwrap(workflow.beginAutosave(document, enabled: true, onError: { _ in }))
     let provisional = TranscriptSegment(start: 0, end: 2, text: "First")
     workflow.append([provisional], until: 2, elapsed: 3, to: &transcript)
     XCTAssertNil(
@@ -24,13 +24,14 @@ final class MeetingWorkflowTests: XCTestCase {
     XCTAssertNil(
       workflow.setAutosave(
         true, state: .finishing, elapsed: 3, transcript: transcript, onError: { _ in }))
-    XCTAssertNotNil(
+    XCTAssertEqual(
       workflow.setAutosave(
-        true, state: .recording, elapsed: 3, transcript: transcript, onError: { _ in }))
+        true, state: .recording, elapsed: 3, transcript: transcript, onError: { _ in }),
+      recordID)
+    XCTAssertEqual(journal.resumed, [recordID])
     let final = TranscriptSegment(start: 0, end: 2, text: "First", speakerID: "1")
     workflow.replaceSegments([final], in: &transcript)
     workflow.finalize(&transcript, elapsed: 4, reason: .requested)
-    _ = try workflow.saved(now: started)
     workflow.release()
 
     XCTAssertEqual(transcript?.segments, [final])
@@ -40,8 +41,7 @@ final class MeetingWorkflowTests: XCTestCase {
     XCTAssertEqual(
       journal.events,
       [
-        "begin", "append", "finish:3.0:false", "begin", "replace", "finish:4.0:true", "flush",
-        "saved:7",
+        "begin", "append", "finish:3.0:false", "resume", "replace", "finish:4.0:true", "flush",
       ])
   }
 
@@ -55,15 +55,28 @@ final class MeetingWorkflowTests: XCTestCase {
     else { return XCTFail("Expected the pipeline failure reason") }
   }
 
+  @MainActor
+  func testStoppingWithoutActiveMeetingFails() async {
+    let workflow = MeetingWorkflow(modes: ModeCoordinator(), journal: Journal())
+    XCTAssertNil(workflow.stop(state: .idle, reason: .capture("lost")))
+    XCTAssertNil(workflow.stop(state: .finishing, reason: .requested))
+  }
+
   private struct TestFailure: Error {}
 
   private final class Journal: MeetingJournalPort {
     var events = [String]()
+    var resumed = [UUID]()
     var onError: @MainActor @Sendable (Error) -> Void = { _ in }
 
     func begin(_ transcript: FileTranscript) -> UUID {
       events.append("begin")
       return UUID()
+    }
+
+    func resumeRecord(_ id: UUID, with transcript: FileTranscript) {
+      events.append("resume")
+      resumed.append(id)
     }
 
     func append(_ segments: [TranscriptSegment], until: Double) { events.append("append") }
@@ -72,10 +85,7 @@ final class MeetingWorkflowTests: XCTestCase {
       events.append("finish:\(duration):\(complete)")
     }
     func flush() { events.append("flush") }
-    func saved(retentionDays: Int, now: Date) throws -> [SavedMeeting] {
-      events.append("saved:\(retentionDays)")
-      return []
-    }
+    func saved(retentionDays: Int, now: Date) throws -> [SavedMeeting] { [] }
     func read(_ id: UUID) throws -> FileTranscript? { nil }
     func save(_ transcript: FileTranscript, to id: UUID?) throws -> UUID { id ?? UUID() }
     func delete(_ id: UUID) throws {}

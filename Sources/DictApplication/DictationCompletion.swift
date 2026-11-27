@@ -11,8 +11,12 @@ public struct DictationCompletion {
     case inserted, pasteRequested, copied, retained
   }
 
-  public let transcript: FileTranscript
+  public private(set) var transcript: FileTranscript
   public let text: String
+  public var audioFile: String? {
+    get { transcript.audioFile }
+    set { transcript.audioFile = newValue }
+  }
 
   public init?(transcript: FileTranscript?, duration: Double) {
     guard var transcript, !transcript.segments.isEmpty else { return nil }

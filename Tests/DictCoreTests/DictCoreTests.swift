@@ -65,6 +65,14 @@ final class FileTranscriptTests: XCTestCase {
     XCTAssertEqual(decoded.segments, transcript.segments)
     XCTAssertEqual(decoded.processedUntil, 3625.125)
   }
+  func testExportExcludesLocalAudioFilename() throws {
+    var transcript = FileTranscript(source: "talk.m4a", duration: 5)
+    transcript.audioFile = "private-name.m4a"
+    let text = String(decoding: try transcript.json(), as: UTF8.self)
+    XCTAssertFalse(text.contains("audioFile"))
+    XCTAssertFalse(text.contains("private-name"))
+    XCTAssertEqual(transcript.audioFile, "private-name.m4a")
+  }
   func testFailedDiarizationExportsHonestSpeakerFreeText() throws {
     var transcript = FileTranscript(source: "talk.m4a", duration: 20)
     transcript.processedUntil = 20

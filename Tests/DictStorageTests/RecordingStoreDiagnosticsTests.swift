@@ -45,12 +45,13 @@ final class RecordingStoreDiagnosticsTests: XCTestCase {
     document.processedUntil = 12
     try store.replace(id, transcript: document)
     try store.finish(id, duration: 12, complete: true)
-    try store.prune(retentionDays: 7)
 
     XCTAssertThrowsError(try store.create(document, category: .file, id: id))
     try store.delete(id)
     XCTAssertNil(try store.load(id))
     try store.deleteAll(category: .file)
+    _ = try store.create(document, category: .file)
+    try store.prune(retentionDays: 7, now: Date().addingTimeInterval(8 * 86_400))
 
     let logged = collector.snapshot().joined(separator: "\n")
     for event in [

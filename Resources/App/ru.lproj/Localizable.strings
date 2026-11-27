@@ -110,7 +110,7 @@
 "files.there-are-no-complete-segments" = "Нет целых реплик для безопасного исправления. Проверьте таймкоды и назначьте спикера вручную.";
 "files.these-are-suggestions-listen-to" = "Это кандидаты, а не доказанные ошибки. Проверьте запись и при необходимости исправьте спикера вручную.";
 "files.this-updates-only-the-complete" = "Подтверждение изменяет только целые реплики этого эпизода. Остальные появления этих ID не затрагиваются.";
-"files.timestamps-are-approximate-and-start" = "Таймкоды приблизительные, от начала файла. Имена спикеров можно исправить вручную. Аудио не сохраняется; история текста — до 7 дней при включённом сохранении.";
+"files.timestamps-are-approximate-and-start" = "Таймкоды приблизительные, от начала файла. Имена спикеров можно исправить вручную. При включённом сохранении текст и аудио хранятся локально 30 дней.";
 "files.turn-audio-files-into-text" = "Преобразуйте аудиофайлы в текст.";
 "files.up-to-3-hours-on" = "До 3 часов · локально · один файл за раз";
 "history.all" = "Все";
@@ -147,7 +147,7 @@
 "history.select-a-record" = "Выберите запись";
 "history.show-all-records" = "Показать все записи";
 "history.this-deletion-is-permanent-original" = "Удаление нельзя отменить. Исходные аудиофайлы не затрагиваются.";
-"history.this-record-s-text-and" = "Текст и разметка этой записи будут удалены.";
+"history.this-record-s-text-and" = "Текст, разметка и сохранённый звук этой записи будут удалены.";
 "history.unsaved-changes" = "Есть несохранённые изменения";
 "history.view-edit-copy-or-export" = "Здесь можно посмотреть, исправить, скопировать или экспортировать результат.";
 "meeting.all-saved-meetings-deleted" = "Все сохранённые встречи удалены.";
@@ -182,7 +182,7 @@
 "meeting.start-new-meeting" = "Начать новую встречу";
 "meeting.stopping-recording-and-processing-the" = "Останавливаем запись и обрабатываем остаток…";
 "meeting.system-audio" = "Звук компьютера";
-"meeting.text-is-saved-locally-for" = "Текст автоматически сохраняется локально на 7 дней. Аудио не сохраняется.";
+"meeting.text-is-saved-locally-for" = "Текст и аудио автоматически сохраняются локально на 30 дней.";
 "meeting.the-app-received-system-audio" = "✓ Ненулевой системный звук поступал в этой записи.";
 "meeting.the-audio-timeline-is-out" = "Нарушена временная шкала записи аудиоканала %@";
 "meeting.the-mac-went-to-sleep" = "Mac перешёл в сон. Сохранена обработанная часть.";
@@ -295,7 +295,7 @@
 "settings.continue-without-saving" = "Перейти без сохранения";
 "settings.could-not-change-setting" = "Не удалось изменить настройку";
 "settings.current-system-microphone" = "Текущий системный микрофон";
-"settings.dictation-meetings-and-files-share" = "Диктовки, встречи и файлы хранятся в одной локальной базе. Аудио не сохраняется.";
+"settings.dictation-meetings-and-files-share" = "Диктовки, встречи и файлы хранятся в одной локальной базе. Если сохранение включено, текст каждой записи хранится на этом Mac 30 дней.";
 "settings.enter-text-in-apps-and" = "Ввод текста в приложения и редакторы.";
 "settings.general" = "Основные";
 "settings.hold-to-record" = "Удержание для записи";
@@ -303,7 +303,7 @@
 "settings.input-monitoring-access-granted" = "Мониторинг ввода разрешён";
 "settings.input-monitoring-for-shortcuts" = "Мониторинг ввода — для клавиш";
 "settings.install-parakeet-ultra-to-continue" = "Необходимо установить Parakeet Ultra";
-"settings.keep-text-for-the-last" = "Сохранять тексты за последние 7 дней";
+"settings.keep-text-for-the-last" = "Сохранять тексты за последние 30 дней";
 "settings.macos-asks-for-access-the" = "macOS запросит разрешение при первой записи встречи. Проверить его статус заранее через публичный API нельзя.";
 "settings.microphone" = "Микрофон";
 "settings.microphone-access-granted" = "✓ Микрофон разрешён";
@@ -341,7 +341,7 @@
 "settings.storage" = "Хранение";
 "settings.system-audio-audio-only-access" = "Системный звук — разрешение только на аудио";
 "settings.technology-and-licenses" = "Технологии и лицензии";
-"settings.text-is-stored-locally-for" = "Тексты хранятся локально семь дней, если сохранение включено.";
+"settings.text-is-stored-locally-for" = "Тексты и аудио хранятся локально 30 дней, если сохранение включено.";
 "settings.the-app-source-code-is" = "Исходный код приложения распространяется по лицензии MIT.";
 "settings.toggle-recording" = "Переключать запись";
 "settings.transcribe-meetings-and-audio-files" = "Транскрипция встреч и аудиофайлов с определением говорящих.";

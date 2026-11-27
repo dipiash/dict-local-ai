@@ -25,6 +25,7 @@ final class MeetingSession: ObservableObject {
   private let recognizer: any MeetingRecognizing
   private let preferences: Preferences
   private var capture: (any MeetingCapturing)?
+  private var audio: HistoryAudioFile?
   private var pipeline: (any MeetingRecognizingPipeline)?
   private var preparation: Task<Void, Never>?
   private var generation = UUID()
@@ -48,7 +49,7 @@ final class MeetingSession: ObservableObject {
         forName: NSWorkspace.willSleepNotification, object: nil, queue: .main
       ) { [weak self] _ in
         MainActor.assumeIsolated {
-          self?.stop(reason: L10n.text("meeting.the-mac-went-to-sleep"))
+          self?.stop(reason: L10n.text("meeting.the-mac-went-to-sleep"), cause: .sleep)
         }
       })
     observers.append(
@@ -56,7 +57,8 @@ final class MeetingSession: ObservableObject {
         forName: NSNotification.Name("com.apple.screenIsLocked"), object: nil, queue: .main
       ) { [weak self] _ in
         MainActor.assumeIsolated {
-          self?.stop(reason: L10n.text("meeting.the-screen-locked-meeting-recording"))
+          self?.stop(
+            reason: L10n.text("meeting.the-screen-locked-meeting-recording"), cause: .screenLocked)
         }
       })
     preferences.$saveHistory.dropFirst().sink { [weak self] enabled in
@@ -81,7 +83,8 @@ final class MeetingSession: ObservableObject {
       message = L10n.text("meeting.wait-for-the-model-and")
       return
     }
-    DiagnosticLog.shared.event("meeting", "start", "source=system")
+    DiagnosticLog.shared.event(
+      "meeting", "start", "source=system audio=\(preferences.saveHistory ? "saved" : "off")")
     generation = UUID()
     let id = generation
     state = .preparing
@@ -119,8 +122,12 @@ final class MeetingSession: ObservableObject {
         self.pipeline = pipeline
         let capture = makeCapture()
         self.capture = capture
+        // Capture the retention preference once so changes apply to the next recording.
+        let audio = HistoryAudioFile.make(kind: .meeting, enabled: preferences.saveHistory)
+        self.audio = audio
         capture.onSamples = { samples, time in
           _ = pipeline.append(samples: samples, at: time)
+          audio?.write(samples, at: time)
         }
         capture.onSystemAudioDetected = { [weak self] in
           guard let self, self.generation == id else { return }
@@ -131,10 +138,11 @@ final class MeetingSession: ObservableObject {
           self.stop(reason: reason)
         }
         let startedAt = Date()
-        let document = workflow.makeTranscript(
+        var document = workflow.makeTranscript(
           title: L10n.text(
             "meeting.recording-title", startedAt.formatted(date: .numeric, time: .shortened)),
           startedAt: startedAt)
+        document.audioFile = audio?.name
         transcript = document
         selectedMeeting = workflow.beginAutosave(
           document, enabled: preferences.saveHistory, onError: journalErrorHandler())
@@ -161,19 +169,40 @@ final class MeetingSession: ObservableObject {
         guard let self, self.state == .recording else { return }
         self.elapsed = min(
           FileTranscript.maximumSeconds, Int(ProcessInfo.processInfo.systemUptime - self.began))
-        if self.elapsed >= FileTranscript.maximumSeconds { self.stop() }
+        if self.elapsed >= FileTranscript.maximumSeconds { self.stop(cause: .timeLimit) }
       }
     }
   }
 
-  func stop(reason: String? = nil) {
-    stop(reason.map(MeetingWorkflow.StopReason.capture) ?? .requested)
+  /// Stable codes for the log; the user-facing text travels separately in `reason`.
+  enum StopCause: String {
+    case requested
+    case timeLimit = "time_limit"
+    case sleep
+    case screenLocked = "screen_locked"
+    case capture, recognition
+    case setupCancelled = "setup_cancelled"
+
+    init(_ reason: MeetingWorkflow.StopReason) {
+      switch reason {
+      case .requested: self = .requested
+      case .setupCancelled: self = .setupCancelled
+      case .capture: self = .capture
+      case .recognition: self = .recognition
+      }
+    }
   }
 
-  private func stop(_ requestedReason: MeetingWorkflow.StopReason) {
-    DiagnosticLog.shared.event(
-      "meeting", "stop", "reason=\(requestedReason.isComplete ? "normal" : "error")")
+  func stop(reason: String? = nil, cause: StopCause? = nil) {
+    stop(
+      reason.map(MeetingWorkflow.StopReason.capture) ?? .requested,
+      cause: cause)
+  }
+
+  private func stop(_ requestedReason: MeetingWorkflow.StopReason, cause: StopCause? = nil) {
     guard let reason = workflow.stop(state: state, reason: requestedReason) else { return }
+    let logged = cause ?? StopCause(requestedReason)
+    DiagnosticLog.shared.event("meeting", "stop", "reason=\(logged.rawValue) elapsed=\(elapsed)")
     state = .finishing
     preparation?.cancel()
     timer?.invalidate()
@@ -197,10 +226,29 @@ final class MeetingSession: ObservableObject {
     }
   }
 
+  // If queued record creation fails, there is no History entry to own the audio.
+  private func recordExists() -> Bool {
+    guard let id = selectedMeeting else { return false }
+    do { return try workflow.read(id) != nil } catch { return true }
+  }
+
   private func finished(reason: MeetingWorkflow.StopReason) {
-    DiagnosticLog.shared.event("meeting", "finished", "segments=\(transcript?.segments.count ?? 0)")
     pipeline = nil
     preparation = nil
+    var audioOutcome = audio == nil ? "off" : "kept"
+    if !recordExists() {
+      audio?.discard()
+      transcript?.audioFile = nil
+      if audio != nil { audioOutcome = "discarded" }
+    } else if audio?.finalizeSynchronously() == false {
+      transcript?.audioFile = nil
+      audioOutcome = "empty"
+    }
+    audio = nil
+    DiagnosticLog.shared.event(
+      "meeting", "finished",
+      "segments=\(transcript?.segments.count ?? 0) audio=\(audioOutcome)"
+    )
     workflow.finalize(&transcript, elapsed: elapsed, reason: reason)
     if selectedMeeting != nil && saveError.isEmpty { unsaved = false }
     reloadSaved()
@@ -276,8 +324,8 @@ final class MeetingSession: ObservableObject {
         selectedMeeting = nil
         unsaved = false
       }
-      savedMeetings = []
       saveError = ""
+      savedMeetings = []
       message = L10n.text("meeting.all-saved-meetings-deleted")
     } catch { saveError = L10n.error(error) }
   }
@@ -309,6 +357,14 @@ final class MeetingSession: ObservableObject {
     pipeline?.cancel()
     timer?.invalidate()
     workflow.shutdown(elapsed: elapsed)
+    // Finalize the file before quitting to preserve the end of the recording.
+    if let audio {
+      let began = ProcessInfo.processInfo.systemUptime
+      _ = audio.finalizeSynchronously()
+      let millis = Int((ProcessInfo.processInfo.systemUptime - began) * 1_000)
+      DiagnosticLog.shared.event("history-audio", "quit_wait", "kind=meeting ms=\(millis)")
+    }
+    audio = nil
     let capture = capture
     Task { await capture?.stop() }
   }

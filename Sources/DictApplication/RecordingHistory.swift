@@ -23,6 +23,27 @@ public protocol RecordingWriter: Sendable {
   ) throws -> UUID
 }
 
+public struct AudioStorageUsage: Equatable, Sendable {
+  public let files: Int
+  public let bytes: Int64
+  public init(files: Int, bytes: Int64) {
+    self.files = files
+    self.bytes = bytes
+  }
+}
+
+public struct AudioCleanupResult: Equatable, Sendable {
+  public let files: Int
+  public let bytes: Int64
+  /// Files retained because an active recording still uses them.
+  public let skippedActive: Int
+  public init(files: Int, bytes: Int64, skippedActive: Int) {
+    self.files = files
+    self.bytes = bytes
+    self.skippedActive = skippedActive
+  }
+}
+
 public protocol RecordingHistoryRepository: RecordingWriter {
   func load(_ id: UUID) throws -> FileTranscript?
   func list(category: RecordingCategory?) throws -> [RecordingSummary]
@@ -30,10 +51,13 @@ public protocol RecordingHistoryRepository: RecordingWriter {
   func delete(_ id: UUID) throws
   func deleteAll(category: RecordingCategory?) throws
   func prune(retentionDays: Int, now: Date) throws
+  func audioUsage() -> AudioStorageUsage
+  /// `active` is read once under the store lock; the 60 s age window keeps a recording that starts later.
+  func clearSavedAudio(active: () -> Set<String>) throws -> AudioCleanupResult
 }
 
 public enum RecordingRetention {
-  public static let days = 7
+  public static let days = 30
 }
 
 public struct RecordingHistory: Sendable {
@@ -65,5 +89,13 @@ public struct RecordingHistory: Sendable {
 
   public func clear(category: RecordingCategory?) throws {
     try repository().deleteAll(category: category)
+  }
+
+  public func audioUsage() throws -> AudioStorageUsage {
+    try repository().audioUsage()
+  }
+
+  public func clearSavedAudio(active: () -> Set<String>) throws -> AudioCleanupResult {
+    try repository().clearSavedAudio(active: active)
   }
 }

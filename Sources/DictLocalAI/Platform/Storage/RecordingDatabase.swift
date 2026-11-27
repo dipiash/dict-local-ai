@@ -7,6 +7,7 @@ enum RecordingDatabase {
       try Paths.prepare()
       return try RecordingStore(
         url: Paths.root.appendingPathComponent("recordings.sqlite3"),
+        audioDirectory: HistoryAudioFile.directory(in: Paths.root),
         onEvent: { event, details in
           DiagnosticLog.shared.event("history-db", event, details)
         })
