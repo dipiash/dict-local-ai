@@ -85,6 +85,8 @@ struct HistoryView: View {
           HStack(spacing: DesignTokens.Spacing.xs) {
             historyFilter
             Spacer(minLength: DesignTokens.Spacing.xs)
+            historyPlaybackButton
+
             historyActionMenu
           }
           .fixedSize(horizontal: true, vertical: false)
@@ -92,8 +94,10 @@ struct HistoryView: View {
             historyFilter
             HStack {
               Spacer(minLength: 0)
+              historyPlaybackButton
               historyActionMenu
             }
+
           }
         }
         .accessibilityIdentifier("history-filter-toolbar")
@@ -219,6 +223,10 @@ struct HistoryView: View {
     .onAppear {
       store.reload()
     }
+    .onDisappear {
+      store.audio.stop(reason: .viewClosed)
+    }
+    .onChange(of: store.draftID) { _, _ in store.audio.stop(reason: .switched) }
     .onReceive(NotificationCenter.default.publisher(for: .recordingStoreDidChange)) { _ in
       store.reload()
     }
@@ -283,6 +291,24 @@ struct HistoryView: View {
     .accessibilityLabel(L10n.text("history.history-filter"))
   }
 
+  @ViewBuilder
+  private var historyPlaybackButton: some View {
+    if let document = store.draftDocument, let id = store.draftID, selected != nil,
+      store.audio.fileURL(audioFile: document.audioFile) != nil
+    {
+      let playing = store.audio.isPlaying(id)
+      let title = playing ? L10n.text("history.stop") : L10n.text("history.listen")
+      Button {
+        toggleHistoryPlayback(id: id, audioFile: document.audioFile)
+      } label: {
+        Label(title, systemImage: playing ? "stop.fill" : "play.fill")
+      }
+      .accessibilityIdentifier("history-listen")
+      .help(title)
+      .fixedSize()
+    }
+  }
+
   private var historyActionMenu: some View {
     Menu(L10n.text("history.record-actions")) {
       if let document = store.draftDocument, selected != nil {
@@ -341,6 +367,12 @@ struct HistoryView: View {
     }
     self.pendingChange = nil
     applyHistoryChange(pendingChange)
+  }
+
+  private func toggleHistoryPlayback(id: UUID, audioFile: String?) {
+    do { try store.audio.toggle(id: id, audioFile: audioFile) } catch {
+      notice = L10n.text("history.could-not-play", L10n.error(error))
+    }
   }
 
   private func export(_ transcript: FileTranscript, format: String) {

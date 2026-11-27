@@ -135,6 +135,9 @@
 "history.file" = "Файл";
 "history.history-filter" = "Фильтр истории";
 "history.history-is-empty" = "История пока пуста";
+"history.could-not-play" = "Не удалось воспроизвести звук: %@";
+"history.listen" = "Прослушать";
+"history.stop" = "Остановить";
 "history.meeting" = "Встреча";
 "history.no-records" = "Записей нет";
 "history.no-records-in-this-category" = "В выбранной категории записей нет";
