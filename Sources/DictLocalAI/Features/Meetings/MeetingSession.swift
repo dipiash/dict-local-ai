@@ -85,7 +85,7 @@ final class MeetingSession: ObservableObject {
       return
     }
     DiagnosticLog.shared.event(
-      "meeting", "start", "source=system audio=\(preferences.saveHistory ? "saved" : "off")")
+      "meeting", "start", "source=system audio=\(preferences.keepsAudio ? "saved" : "off")")
     silence.withLock { $0 = SilentAudioMonitor() }
     generation = UUID()
     let id = generation
@@ -126,7 +126,7 @@ final class MeetingSession: ObservableObject {
         let capture = makeCapture()
         self.capture = capture
         // Capture the retention preference once so changes apply to the next recording.
-        let audio = HistoryAudioFile.make(kind: .meeting, enabled: preferences.saveHistory)
+        let audio = HistoryAudioFile.make(kind: .meeting, enabled: preferences.keepsAudio)
         self.audio = audio
         capture.onSamples = { [weak self] samples, time in
           _ = pipeline.append(samples: samples, at: time)

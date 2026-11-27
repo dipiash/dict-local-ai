@@ -17,10 +17,13 @@ enum UsageTelemetry {
     case startMeeting, stopMeeting, confirmNewMeeting, cancelNewMeeting
     case saveEdits, refreshHistory, clearHistoryPrompt, clearHistoryConfirm
     case deleteEntryPrompt, deleteEntryConfirm, selectEntry
+    case removeAllAudioPrompt, removeAllAudioConfirm
+    case openLogs = "open_logs"
     case modelInstall, modelReinstall
     case toggleSidebar, changeSettingsTab, toggleSetup, refreshMicrophones
     case captureHoldShortcut, captureToggleShortcut, restoreShortcuts
-    case toggleEnabled, toggleHistory, selectMicrophone, setHoldShortcut, setToggleShortcut
+    case toggleEnabled, toggleHistory, toggleHistoryPlayback, toggleClipboardRestore
+    case selectMicrophone, setHoldShortcut, setToggleShortcut
     case selectMeetingSource, startHandsFree, openLastDictation, quit
     case manualCopy, dismissResult, openPrivacySettings, copyResultToEditor, clearScratchpad
     case retryDictation, cancelDictation, stopDictation

@@ -4,6 +4,8 @@ import Foundation
 protocol PreferencesStorage: AnyObject {
   var enabled: Bool { get set }
   var saveHistory: Bool { get set }
+  var saveAudio: Bool { get set }
+  var restoreClipboard: Bool { get set }
   var microphone: String { get set }
   var hold: Shortcut { get set }
   var toggle: Shortcut { get set }
@@ -15,7 +17,9 @@ final class UserDefaultsPreferences: PreferencesStorage {
 
   init(defaults: UserDefaults = .standard) {
     self.defaults = defaults
-    defaults.register(defaults: ["enabled": true, "history": true])
+    defaults.register(defaults: [
+      "enabled": true, "history": true, "historyAudio": true, "restoreClipboard": true,
+    ])
   }
 
   var enabled: Bool {
@@ -26,6 +30,16 @@ final class UserDefaultsPreferences: PreferencesStorage {
   var saveHistory: Bool {
     get { defaults.bool(forKey: "history") }
     set { defaults.set(newValue, forKey: "history") }
+  }
+
+  var saveAudio: Bool {
+    get { defaults.bool(forKey: "historyAudio") }
+    set { defaults.set(newValue, forKey: "historyAudio") }
+  }
+
+  var restoreClipboard: Bool {
+    get { defaults.bool(forKey: "restoreClipboard") }
+    set { defaults.set(newValue, forKey: "restoreClipboard") }
   }
 
   var microphone: String {

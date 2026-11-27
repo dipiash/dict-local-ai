@@ -338,6 +338,10 @@
 "settings.recording-source" = "Источник записи";
 "settings.refresh-list" = "Обновить список";
 "settings.reset-to-left-option-fn" = "Вернуть левый Option + Fn и Fn + Space";
+"settings.restore-clipboard" = "Возвращать прежний буфер после диктовки";
+"settings.restore-clipboard-hint" = "После вставки текста приложение возвращает то, что вы копировали раньше. Выключите, чтобы текст диктовки остался в буфере обмена.";
+"settings.save-audio" = "Сохранять звук";
+"settings.save-audio-hint" = "Звук новых записей хранится на этом Mac 30 дней вместе с текстом. Выключите, чтобы хранить только текст: уже сохранённый звук остаётся до конца своих 30 дней. Изменение во время встречи действует со следующей записи.";
 "settings.save-and-continue" = "Сохранить и перейти";
 "settings.save-changes-to-history-before" = "Сохранить изменения истории перед переходом?";
 "settings.set-your-general-preferences" = "Настройте основные параметры приложения.";

@@ -445,6 +445,10 @@ struct WorkspaceView: View {
         SettingsToggleRow(title: L10n.text("menu.dictation-enabled"), isOn: $preferences.enabled)
         Text(L10n.text("settings.use-the-shortcut-to-insert"))
           .font(AppStyle.caption).foregroundStyle(.secondary)
+        SettingsToggleRow(
+          title: L10n.text("settings.restore-clipboard"), isOn: $preferences.restoreClipboard)
+        Text(L10n.text("settings.restore-clipboard-hint"))
+          .font(AppStyle.caption).foregroundStyle(.secondary)
       }
       SettingsSection(L10n.text("settings.readiness")) {
         HStack {
@@ -546,6 +550,12 @@ struct WorkspaceView: View {
         SettingsToggleRow(
           title: L10n.text("settings.keep-text-for-the-last"), isOn: $preferences.saveHistory)
         Text(L10n.text("settings.dictation-meetings-and-files-share"))
+          .font(AppStyle.caption).foregroundStyle(.secondary)
+        SettingsToggleRow(
+          title: L10n.text("settings.save-audio"), isOn: $preferences.saveAudio
+        )
+        .disabled(!preferences.saveHistory)
+        Text(L10n.text("settings.save-audio-hint"))
           .font(AppStyle.caption).foregroundStyle(.secondary)
       }
     }
