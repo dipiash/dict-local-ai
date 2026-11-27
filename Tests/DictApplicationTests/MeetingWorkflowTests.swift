@@ -85,7 +85,6 @@ final class MeetingWorkflowTests: XCTestCase {
       events.append("finish:\(duration):\(complete)")
     }
     func flush() { events.append("flush") }
-    func saved(retentionDays: Int, now: Date) throws -> [SavedMeeting] { [] }
     func read(_ id: UUID) throws -> FileTranscript? { nil }
     func save(_ transcript: FileTranscript, to id: UUID?) throws -> UUID { id ?? UUID() }
     func delete(_ id: UUID) throws {}

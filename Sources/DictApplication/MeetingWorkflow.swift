@@ -43,7 +43,6 @@ public protocol MeetingJournalPort: AnyObject {
   func replaceSegments(_ segments: [TranscriptSegment])
   func finish(duration: Double, complete: Bool)
   func flush()
-  func saved(retentionDays: Int, now: Date) throws -> [SavedMeeting]
   func read(_ id: UUID) throws -> FileTranscript?
   func save(_ transcript: FileTranscript, to id: UUID?) throws -> UUID
   func delete(_ id: UUID) throws
@@ -164,10 +163,6 @@ public final class MeetingWorkflow {
   public func release() {
     modes.release(lease)
     lease = nil
-  }
-
-  public func saved(now: Date = Date()) throws -> [SavedMeeting] {
-    try journal.saved(retentionDays: RecordingRetention.days, now: now)
   }
 
   public func read(_ id: UUID) throws -> FileTranscript? {
