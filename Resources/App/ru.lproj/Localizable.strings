@@ -124,8 +124,10 @@
 "history.could-not-clear-history" = "Не удалось очистить историю: %@";
 "history.could-not-delete-the-record" = "Не удалось удалить запись: %@";
 "history.could-not-open-the-record" = "Не удалось открыть запись: %@";
+"history.could-not-play" = "Не удалось воспроизвести звук: %@";
 "history.could-not-read-history" = "Не удалось прочитать историю: %@";
 "history.could-not-save-changes" = "Не удалось сохранить изменения: %@";
+"history.position" = "Позиция воспроизведения";
 "history.record-changed-while-open" = "Запись изменилась, пока была открыта. Отмените правки и откройте её снова.";
 "history.could-not-save-the-record" = "Не удалось сохранить запись: %@";
 "history.database-unavailable" = "База записей недоступна.";
@@ -137,11 +139,8 @@
 "history.file" = "Файл";
 "history.history-filter" = "Фильтр истории";
 "history.history-is-empty" = "История пока пуста";
-"history.could-not-play" = "Не удалось воспроизвести звук: %@";
 "history.listen" = "Прослушать";
-"history.stop" = "Остановить";
 "history.listen-from-here" = "Прослушать с этого места";
-"history.position" = "Позиция воспроизведения";
 "history.meeting" = "Встреча";
 "history.no-records" = "Записей нет";
 "history.no-records-in-this-category" = "В выбранной категории записей нет";
@@ -154,6 +153,7 @@
 "history.save-or-discard-your-transcript" = "Сначала сохраните изменения транскрипции либо откажитесь от них.";
 "history.select-a-record" = "Выберите запись";
 "history.show-all-records" = "Показать все записи";
+"history.stop" = "Остановить";
 "history.this-deletion-is-permanent-original" = "Удаление нельзя отменить. Исходные аудиофайлы не затрагиваются.";
 "history.this-record-s-text-and" = "Текст, разметка и сохранённый звук этой записи будут удалены.";
 "history.unsaved-changes" = "Есть несохранённые изменения";
@@ -340,9 +340,9 @@
 "settings.reset-to-left-option-fn" = "Вернуть левый Option + Fn и Fn + Space";
 "settings.restore-clipboard" = "Возвращать прежний буфер после диктовки";
 "settings.restore-clipboard-hint" = "После вставки текста приложение возвращает то, что вы копировали раньше. Выключите, чтобы текст диктовки остался в буфере обмена.";
+"settings.save-and-continue" = "Сохранить и перейти";
 "settings.save-audio" = "Сохранять звук";
 "settings.save-audio-hint" = "Звук новых записей хранится на этом Mac 30 дней вместе с текстом. Выключите, чтобы хранить только текст: уже сохранённый звук остаётся до конца своих 30 дней. Изменение во время встречи действует со следующей записи.";
-"settings.save-and-continue" = "Сохранить и перейти";
 "settings.audio-usage" = "Звук: %@, %@";
 "settings.audio-size" = "%lld МБ";
 "settings.audio-usage-counting" = "Звук: считаю…";

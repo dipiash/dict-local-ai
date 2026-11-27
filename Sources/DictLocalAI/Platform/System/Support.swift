@@ -1,4 +1,5 @@
 import AppKit
+import DictCore
 import Foundation
 
 struct AppFailure: LocalizedError {
@@ -18,9 +19,16 @@ enum Paths {
     FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
       .appendingPathComponent("Dict Local AI", isDirectory: true)
   }
-  static func prepare() throws {
+  /// History database, audio and preferences. Models stay in `root` even when DICT_DATA_DIR is set.
+  static var data: URL { data(environment: ProcessInfo.processInfo.environment) }
+  static func data(environment: [String: String]) -> URL {
+    ApplicationDataLocation.override(environment: environment) ?? root
+  }
+  static func prepare() throws { try create(data) }
+  static func prepareModels() throws { try create(root) }
+  private static func create(_ url: URL) throws {
     try FileManager.default.createDirectory(
-      at: root, withIntermediateDirectories: true,
+      at: url, withIntermediateDirectories: true,
       attributes: [.posixPermissions: 0o700])
   }
 }

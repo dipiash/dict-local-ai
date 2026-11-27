@@ -59,7 +59,7 @@ final class HistoryPlaybackController: ObservableObject {
   private let open: (URL) throws -> ArchivedAudioPlayback
 
   init(
-    directory: URL = HistoryAudioFile.directory(in: Paths.root),
+    directory: URL = HistoryAudioFile.directory(in: Paths.data),
     open: @escaping (URL) throws -> ArchivedAudioPlayback = { try AVArchivedAudioPlayback(url: $0) }
   ) {
     self.directory = directory

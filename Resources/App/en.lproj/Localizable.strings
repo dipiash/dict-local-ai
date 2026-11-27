@@ -124,8 +124,10 @@
 "history.could-not-clear-history" = "Could not clear history: %@";
 "history.could-not-delete-the-record" = "Could not delete the record: %@";
 "history.could-not-open-the-record" = "Could not open the record: %@";
+"history.could-not-play" = "Could not play the audio: %@";
 "history.could-not-read-history" = "Could not read history: %@";
 "history.could-not-save-changes" = "Could not save changes: %@";
+"history.position" = "Playback position";
 "history.record-changed-while-open" = "The record changed while it was open. Discard your edits and open it again.";
 "history.could-not-save-the-record" = "Could not save the record: %@";
 "history.database-unavailable" = "The recording database is unavailable.";
@@ -137,11 +139,8 @@
 "history.file" = "File";
 "history.history-filter" = "History Filter";
 "history.history-is-empty" = "History is empty";
-"history.could-not-play" = "Could not play the audio: %@";
 "history.listen" = "Listen";
-"history.stop" = "Stop";
 "history.listen-from-here" = "Listen from here";
-"history.position" = "Playback position";
 "history.meeting" = "Meeting";
 "history.no-records" = "No Records";
 "history.no-records-in-this-category" = "No Records in This Category";
@@ -154,6 +153,7 @@
 "history.save-or-discard-your-transcript" = "Save or discard your transcript changes before continuing.";
 "history.select-a-record" = "Select a Record";
 "history.show-all-records" = "Show All Records";
+"history.stop" = "Stop";
 "history.this-deletion-is-permanent-original" = "This deletion is permanent. Original audio files stay intact.";
 "history.this-record-s-text-and" = "This record’s text, formatting, and saved audio will be deleted.";
 "history.unsaved-changes" = "Unsaved Changes";
@@ -340,9 +340,9 @@
 "settings.reset-to-left-option-fn" = "Reset to Left Option + Fn and Fn + Space";
 "settings.restore-clipboard" = "Restore the previous clipboard after dictation";
 "settings.restore-clipboard-hint" = "After the text is pasted, the app puts back what you had copied before. Turn it off to leave the dictated text on the clipboard.";
+"settings.save-and-continue" = "Save and Continue";
 "settings.save-audio" = "Save audio";
 "settings.save-audio-hint" = "Audio of new recordings is kept on this Mac for 30 days with the text. Turn it off to keep text only: audio already saved stays until its 30 days end. A change during a meeting applies from the next recording.";
-"settings.save-and-continue" = "Save and Continue";
 "settings.audio-usage" = "Audio: %@, %@";
 "settings.audio-size" = "%lld MB";
 "settings.audio-usage-counting" = "Audio: counting…";

@@ -13,7 +13,7 @@ struct HuggingFaceModelEnvironment: ModelSetupEnvironment {
       UUID().uuidString, isDirectory: true)
   }
 
-  func preparePaths() throws { try Paths.prepare() }
+  func preparePaths() throws { try Paths.prepareModels() }
 
   func revision(for kind: ManagedModel) async throws -> String {
     try await HuggingFaceModels.revision(for: kind)

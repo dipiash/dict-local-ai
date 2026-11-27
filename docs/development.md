@@ -33,10 +33,12 @@ second debug build, build a release app, sign, install or open the app. Use
 `task check && task install` to check changes and try the release app locally.
 `install` already opens the app, so a subsequent `run` is unnecessary.
 
-Additional checks are explicit. `test:contracts` runs source and packaging contracts.
-`test:ui` checks navigation and window geometry. Run `test:ui:live` only when
-the desktop is idle and no meeting is active because it starts a real meeting.
-`test:localization` builds and checks a DMG. See [testing.md](testing.md).
+Additional checks are explicit: `test:contracts` runs only source and packaging
+contracts (including UI tokens); `test:ui` runs `ui:smoke`, `ui:geometry`,
+`ui:history-audio` and `ui:storage-settings` against the installed app (the last
+two on a temp data folder set by `DICT_DATA_DIR`); `test:ui:live` runs live
+scenarios that start a meeting or change your clipboard (only when you are away); `test:localization` builds and checks a DMG.
+UI and DMG checks are separate from ordinary `test` and `check`; see [testing.md](testing.md).
 
 Maintenance commands remain separate: `clean`; `reinstall` and `uninstall`,
 including their `:purge` variants; `permissions:doctor`, `permissions:reset`, `logs:open`

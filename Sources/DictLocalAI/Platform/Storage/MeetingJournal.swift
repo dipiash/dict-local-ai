@@ -17,7 +17,7 @@ final class MeetingJournal: MeetingJournalPort, Sendable {
     set { errorHandler.withLock { $0 = newValue } }
   }
 
-  static var directory: URL { Paths.root }
+  static var directory: URL { Paths.data }
 
   private static func database(in folder: URL) throws -> RecordingStore {
     if folder.standardizedFileURL == directory.standardizedFileURL {
