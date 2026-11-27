@@ -141,6 +141,7 @@
 "history.listen" = "Прослушать";
 "history.stop" = "Остановить";
 "history.listen-from-here" = "Прослушать с этого места";
+"history.position" = "Позиция воспроизведения";
 "history.meeting" = "Встреча";
 "history.no-records" = "Записей нет";
 "history.no-records-in-this-category" = "В выбранной категории записей нет";

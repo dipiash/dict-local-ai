@@ -86,7 +86,7 @@ struct HistoryView: View {
             historyFilter
             Spacer(minLength: DesignTokens.Spacing.xs)
             historyPlaybackButton
-
+            historyPlaybackSlider(compact: false)
             historyActionMenu
           }
           .fixedSize(horizontal: true, vertical: false)
@@ -97,7 +97,7 @@ struct HistoryView: View {
               historyPlaybackButton
               historyActionMenu
             }
-
+            historyPlaybackSlider(compact: true)
           }
         }
         .accessibilityIdentifier("history-filter-toolbar")
@@ -313,6 +313,21 @@ struct HistoryView: View {
       .accessibilityIdentifier("history-listen")
       .help(title)
       .fixedSize()
+    }
+  }
+
+  @ViewBuilder
+  private func historyPlaybackSlider(compact: Bool) -> some View {
+    if let document = store.draftDocument, let id = store.draftID, selected != nil,
+      store.audio.fileURL(audioFile: document.audioFile) != nil
+    {
+      HistoryPlaybackSlider(
+        player: store.audio, id: id, recordDuration: document.duration, compact: compact
+      ) { time in
+        do { try store.audio.seek(id: id, audioFile: document.audioFile, to: time) } catch {
+          notice = L10n.text("history.could-not-play", L10n.error(error))
+        }
+      }
     }
   }
 
