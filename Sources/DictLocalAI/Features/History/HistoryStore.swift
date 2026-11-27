@@ -11,6 +11,8 @@ final class HistoryStore: ObservableObject {
   var draftID: UUID? { draft.id }
   var draftDocument: FileTranscript? { draft.document }
   var draftDirty: Bool { draft.isDirty }
+  let audio: HistoryPlaybackController
+  private var playbackStateSubscription: AnyCancellable?
 
   // Keep the original record snapshot to detect changes after opening the draft.
   private var loadedDraftDocument: FileTranscript?
@@ -86,8 +88,12 @@ final class HistoryStore: ObservableObject {
 
   private let history: RecordingHistory
 
-  init(history: RecordingHistory) {
+  init(history: RecordingHistory, audio: HistoryPlaybackController = HistoryPlaybackController()) {
     self.history = history
+    self.audio = audio
+    // The slider observes position updates. Redraw the list only when playback starts or stops.
+    playbackStateSubscription = audio.$playingRecordID.removeDuplicates().dropFirst()
+      .sink { [weak self] _ in self?.objectWillChange.send() }
     reload()
   }
 

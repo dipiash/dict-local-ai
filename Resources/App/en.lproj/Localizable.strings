@@ -135,6 +135,9 @@
 "history.file" = "File";
 "history.history-filter" = "History Filter";
 "history.history-is-empty" = "History is empty";
+"history.could-not-play" = "Could not play the audio: %@";
+"history.listen" = "Listen";
+"history.stop" = "Stop";
 "history.meeting" = "Meeting";
 "history.no-records" = "No Records";
 "history.no-records-in-this-category" = "No Records in This Category";
